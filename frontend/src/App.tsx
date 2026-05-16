@@ -589,6 +589,9 @@ function App() {
           </section>
         </main>
       )}
+      <footer className="appfooter">
+        © 2026 edge · <a href="mailto:jclover2@snu.ac.kr">jclover2@snu.ac.kr</a>
+      </footer>
     </div>
   )
 }

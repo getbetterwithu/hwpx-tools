@@ -186,6 +186,15 @@ export function HelpDialog({ open, onClose }: Props) {
             </div>
           </section>
 
+          <section className="help-section help-credit">
+            <p>
+              © 2026 <b>edge</b> (edu + forge) · 만든이 메일:{' '}
+              <a href="mailto:jclover2@snu.ac.kr">jclover2@snu.ac.kr</a>
+              <br />
+              피드백·버그 제보·기능 요청은 메일로 보내주세요.
+            </p>
+          </section>
+
         </div>
       </div>
     </div>
