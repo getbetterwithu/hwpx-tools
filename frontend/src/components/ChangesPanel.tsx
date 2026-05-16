@@ -36,7 +36,7 @@ export function ChangesPanel({ changes, selectedId, onSelect, onClear }: Props) 
             >
               <div className="change-source">
                 {c.source === 'manual' && '직접 편집'}
-                {c.source === 'replace' && '일괄 치환'}
+                {c.source === 'replace' && '일괄 변경'}
                 {c.source === 'ai' && 'AI'}
                 {c.source === 'undo' && '되돌리기'}
                 {c.source === 'redo' && '다시 실행'}

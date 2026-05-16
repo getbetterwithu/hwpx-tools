@@ -4,6 +4,7 @@ import { ChangesPanel } from './components/ChangesPanel'
 import { ChatPanel } from './components/ChatPanel'
 import { PreviewPanel, type PreviewHandle } from './components/PreviewPanel'
 import { SettingsDialog } from './components/SettingsDialog'
+import { HelpDialog } from './components/HelpDialog'
 import { SymbolPalette } from './components/SymbolPalette'
 import * as api from './api'
 import { useAISettings } from './aiSettings'
@@ -31,6 +32,7 @@ function App() {
 
   const [aiSettings, setAiSettings] = useAISettings()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [thinking, setThinking] = useState(false)
   // Map of retryToken -> the original user message text, so the retry
   // button can resubmit the exact same request with extra hints.
@@ -464,6 +466,7 @@ function App() {
         <div className="brand">hwpx 편집기</div>
         {!sessionId ? (
           <div className="topbar-right">
+            <button onClick={() => setHelpOpen(true)}>📄 사용설명서</button>
             <button onClick={() => setSettingsOpen(true)}>⚙ AI 설정</button>
           </div>
         ) : (
@@ -502,7 +505,7 @@ function App() {
                   onChange={(e) => setNewText(e.target.value)}
                 />
                 <button onClick={doReplace} disabled={busy || !oldText}>
-                  일괄 치환
+                  일괄 변경
                 </button>
               </div>
               <div className="symbol-anchor">
@@ -525,6 +528,7 @@ function App() {
               </div>
             </div>
             <div className="topbar-right">
+              <button onClick={() => setHelpOpen(true)}>📄 사용설명서</button>
               <button onClick={() => setSettingsOpen(true)} title="AI 설정">
                 ⚙ AI 설정
               </button>
@@ -539,6 +543,7 @@ function App() {
         )}
       </header>
 
+      <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
       <SettingsDialog
         open={settingsOpen}
         initial={aiSettings}

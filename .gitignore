@@ -9,8 +9,8 @@ backend/**/*.pyc
 frontend/node_modules/
 frontend/dist/
 
-# Samples (실제 문서는 로컬 보관)
-samples/
+# Samples (실제 문서는 로컬 보관, public/samples는 제외)
+/samples/
 
 # macOS
 .DS_Store
