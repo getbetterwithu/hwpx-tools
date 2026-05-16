@@ -18,7 +18,7 @@ function App() {
   const [redTids, setRedTids] = useState<Set<number>>(new Set())
   const [selectedChangeId, setSelectedChangeId] = useState<string | null>(null)
   const [changes, setChanges] = useState<ChangeRecord[]>([])
-  const [redoStack, setRedoStack] = useState<ChangeRecord[]>([])  // popped by undo, restored by redo
+  const [_redoStack, setRedoStack] = useState<ChangeRecord[]>([])  // popped by undo, restored by redo
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
