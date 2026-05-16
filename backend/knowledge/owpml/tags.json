@@ -1,0 +1,414 @@
+{
+  "_meta": {
+    "source": "hancom-io/hwpx-owpml-model (Apache-2.0) OWPML/Class/*.h headers, cross-referenced against real HWPX samples in /samples.",
+    "convention": "Tag keys use prefixed form 'ns:name'. 'children' lists XML element names allowed as direct children (observed + declared). 'parents' is the inverse. Attribute 'type' uses XSD-ish vocabulary: string | uint | int | bool (0|1) | IDREF | enum | color (#RRGGBB) | HWPUNIT.",
+    "units": {
+      "HWPUNIT": "1/7200 inch. Used for widths, heights, margins on most layout attributes.",
+      "HWPUNIT100": "Char height — pt × 100. e.g. 10pt = 1000.",
+      "PERCENT100": "100 = 100%."
+    },
+    "id_systems": "All references between elements use integer IDREF into header.xml lists: paraPrIDRef → hh:paraPr/@id, charPrIDRef → hh:charPr/@id, styleIDRef → hh:style/@id, borderFillIDRef → hh:borderFill/@id."
+  },
+
+  "hs:sec": {
+    "name": "sec", "namespace": "section",
+    "purpose": "섹션 루트. Contents/sectionN.xml 파일의 최상위 엘리먼트. 한 섹션 안의 모든 문단(hp:p)을 담는다.",
+    "attributes": [],
+    "children": ["hp:p"],
+    "parents": []
+  },
+
+  "hp:p": {
+    "name": "p", "namespace": "paragraph",
+    "purpose": "한 단락. 본문/표 셀 안에 위치. 모든 텍스트와 인라인 객체는 이 안의 hp:run에 들어간다.",
+    "attributes": [
+      {"name": "id", "type": "uint", "required": false, "purpose": "단락 고유 ID (문서 내 유일)"},
+      {"name": "paraPrIDRef", "type": "IDREF", "required": false, "purpose": "hh:paraPr/@id 참조 (단락 모양)"},
+      {"name": "styleIDRef", "type": "IDREF", "required": false, "purpose": "hh:style/@id 참조 (스타일)"},
+      {"name": "pageBreak", "type": "bool", "required": false, "purpose": "단락 앞에서 페이지 나누기"},
+      {"name": "columnBreak", "type": "bool", "required": false, "purpose": "단락 앞에서 단 나누기"},
+      {"name": "merged", "type": "bool", "required": false, "purpose": "다음 단락과 합쳐진 단락 표시"}
+    ],
+    "children": ["hp:run", "hp:linesegarray"],
+    "parents": ["hs:sec", "hp:subList"]
+  },
+
+  "hp:run": {
+    "name": "run", "namespace": "paragraph",
+    "purpose": "동일한 글자모양(charPr)을 공유하는 인라인 콘텐츠 묶음. 하나의 단락은 N개의 run으로 나뉜다.",
+    "attributes": [
+      {"name": "charPrIDRef", "type": "IDREF", "required": false, "purpose": "hh:charPr/@id 참조 (글자 모양)"}
+    ],
+    "children": [
+      "hp:secPr", "hp:ctrl", "hp:t", "hp:tbl", "hp:pic", "hp:ole",
+      "hp:container", "hp:equation", "hp:line", "hp:rect", "hp:ellipse",
+      "hp:arc", "hp:polygon", "hp:curve", "hp:connectLine", "hp:textart",
+      "hp:compose", "hp:dutmal", "hp:btn", "hp:radioBtn", "hp:checkBtn",
+      "hp:comboBox", "hp:listBox", "hp:edit", "hp:scrollBar", "hp:video",
+      "hp:markpenBegin", "hp:markpenEnd", "hp:chart"
+    ],
+    "parents": ["hp:p"]
+  },
+
+  "hp:t": {
+    "name": "t", "namespace": "paragraph",
+    "purpose": "텍스트 노드. 실제 문자열을 담는다. 빈 셀에도 <hp:t/>는 존재. 내부에 인라인 제어(탭/줄바꿈/마크펜 등)를 끼울 수 있어 텍스트가 여러 조각으로 쪼개질 수 있다.",
+    "attributes": [
+      {"name": "charStyleIDRef", "type": "IDREF", "required": false, "purpose": "이 t 조각만 다른 글자 스타일을 쓸 때(드뭄)"}
+    ],
+    "children": [
+      "hp:tab", "hp:lineBreak", "hp:hypen", "hp:nbSpace", "hp:fwSpace",
+      "hp:markpenBegin", "hp:markpenEnd", "hp:titleMark",
+      "hp:tcInsertBegin", "hp:tcInsertEnd", "hp:tcDeleteBegin", "hp:tcDeleteEnd"
+    ],
+    "parents": ["hp:run"],
+    "notes": "혼합 콘텐츠(mixed content): 자식 엘리먼트와 텍스트 노드가 섞인다. 본문 추출 시 텍스트는 t 자체의 텍스트 + 자식 사이 텍스트를 모두 모아야 함."
+  },
+
+  "hp:tab": {"name": "tab", "namespace": "paragraph", "purpose": "탭 문자. t 내부의 인라인 제어.", "attributes": [], "children": [], "parents": ["hp:t"]},
+  "hp:lineBreak": {"name": "lineBreak", "namespace": "paragraph", "purpose": "줄바꿈(Shift+Enter). 새 단락이 아닌 강제 개행.", "attributes": [], "children": [], "parents": ["hp:t"]},
+  "hp:hypen": {"name": "hypen", "namespace": "paragraph", "purpose": "하이픈(연결자).", "attributes": [], "children": [], "parents": ["hp:t"]},
+  "hp:nbSpace": {"name": "nbSpace", "namespace": "paragraph", "purpose": "묶음(non-breaking) 공백.", "attributes": [], "children": [], "parents": ["hp:t"]},
+  "hp:fwSpace": {"name": "fwSpace", "namespace": "paragraph", "purpose": "고정폭(전각) 공백.", "attributes": [], "children": [], "parents": ["hp:t"]},
+
+  "hp:linesegarray": {
+    "name": "linesegarray", "namespace": "paragraph",
+    "purpose": "단락 줄 단위 레이아웃 캐시(엔진이 생성). 의미 편집 시 무시 가능하지만, 새 단락을 만들 때 최소한 하나는 넣어야 호환됨.",
+    "attributes": [],
+    "children": ["hp:lineseg"],
+    "parents": ["hp:p"]
+  },
+  "hp:lineseg": {
+    "name": "lineseg", "namespace": "paragraph",
+    "purpose": "linesegarray 한 줄. 레이아웃 좌표 캐시.",
+    "attributes": [
+      {"name": "textpos", "type": "uint", "required": true, "purpose": "이 줄이 시작하는 텍스트 위치"},
+      {"name": "vertpos", "type": "int", "required": true, "purpose": "수직 위치(HWPUNIT)"},
+      {"name": "vertsize", "type": "int", "required": true, "purpose": "수직 크기"},
+      {"name": "textheight", "type": "int", "required": true, "purpose": "텍스트 높이"},
+      {"name": "baseline", "type": "int", "required": true, "purpose": "베이스라인 오프셋"},
+      {"name": "spacing", "type": "int", "required": true, "purpose": "줄 간격"},
+      {"name": "horzpos", "type": "int", "required": true, "purpose": "수평 위치"},
+      {"name": "horzsize", "type": "int", "required": true, "purpose": "수평 크기"},
+      {"name": "flags", "type": "uint", "required": true, "purpose": "플래그 비트"}
+    ],
+    "children": [],
+    "parents": ["hp:linesegarray"]
+  },
+
+  "hp:ctrl": {
+    "name": "ctrl", "namespace": "paragraph",
+    "purpose": "제어 객체 컨테이너 (페이지번호·머리말/꼬리말·각주·자동번호·필드 등). run 안에서 인라인 제어를 둘러싼다.",
+    "attributes": [],
+    "children": ["hp:colPr", "hp:pageNum", "hp:pageHiding", "hp:newNum", "hp:autoNum", "hp:bookmark", "hp:header", "hp:footer", "hp:footNote", "hp:endNote", "hp:fieldBegin", "hp:fieldEnd", "hp:indexmark", "hp:hiddenComment"],
+    "parents": ["hp:run"]
+  },
+
+  "hp:secPr": {
+    "name": "secPr", "namespace": "paragraph",
+    "purpose": "섹션 속성. 보통 섹션 첫 단락의 첫 run 안에 자식으로 한 번 등장. 페이지 크기·여백·머리말/꼬리말 정보의 컨테이너.",
+    "attributes": [
+      {"name": "id", "type": "string", "required": false, "purpose": "섹션 ID(보통 빈 문자열)"},
+      {"name": "textDirection", "type": "enum", "required": false, "purpose": "HORIZONTAL | VERTICAL"},
+      {"name": "spaceColumns", "type": "HWPUNIT", "required": false, "purpose": "단 간격"},
+      {"name": "tabStop", "type": "HWPUNIT", "required": false, "purpose": "기본 탭 간격"},
+      {"name": "tabStopVal", "type": "int", "required": false},
+      {"name": "tabStopUnit", "type": "enum", "required": false, "purpose": "HWPUNIT | RATIO"},
+      {"name": "outlineShapeIDRef", "type": "IDREF", "required": false},
+      {"name": "memoShapeIDRef", "type": "IDREF", "required": false},
+      {"name": "textVerticalWidthHead", "type": "bool", "required": false},
+      {"name": "masterPageCnt", "type": "uint", "required": false}
+    ],
+    "children": ["hp:grid", "hp:startNum", "hp:visibility", "hp:lineNumberShape", "hp:pagePr", "hp:footNotePr", "hp:endNotePr", "hp:pageBorderFill", "hp:masterPage", "hp:presentation"],
+    "parents": ["hp:run"]
+  },
+
+  "hp:pagePr": {
+    "name": "pagePr", "namespace": "paragraph",
+    "purpose": "페이지 크기와 방향. secPr 안에 위치.",
+    "attributes": [
+      {"name": "landscape", "type": "enum", "required": true, "purpose": "NARROWLY | WIDELY (세로/가로)"},
+      {"name": "width", "type": "HWPUNIT", "required": true, "purpose": "페이지 너비"},
+      {"name": "height", "type": "HWPUNIT", "required": true, "purpose": "페이지 높이"},
+      {"name": "gutterType", "type": "enum", "required": false, "purpose": "LEFT_ONLY | LEFT_RIGHT | TOP_BOTTOM"}
+    ],
+    "children": ["hp:margin"],
+    "parents": ["hp:secPr"]
+  },
+  "hp:margin": {
+    "name": "margin", "namespace": "paragraph",
+    "purpose": "페이지 여백 (4면+머리말+꼬리말+제본).",
+    "attributes": [
+      {"name": "header", "type": "HWPUNIT", "required": true},
+      {"name": "footer", "type": "HWPUNIT", "required": true},
+      {"name": "gutter", "type": "HWPUNIT", "required": true},
+      {"name": "left", "type": "HWPUNIT", "required": true},
+      {"name": "right", "type": "HWPUNIT", "required": true},
+      {"name": "top", "type": "HWPUNIT", "required": true},
+      {"name": "bottom", "type": "HWPUNIT", "required": true}
+    ],
+    "children": [],
+    "parents": ["hp:pagePr"]
+  },
+  "hp:grid": {"name": "grid", "namespace": "paragraph", "purpose": "원고지/줄 그리드 설정.", "attributes": [{"name": "lineGrid", "type": "uint", "required": true}, {"name": "charGrid", "type": "uint", "required": true}, {"name": "wonggojiFormat", "type": "bool", "required": true}], "children": [], "parents": ["hp:secPr"]},
+  "hp:startNum": {"name": "startNum", "namespace": "paragraph", "purpose": "섹션 시작 번호(쪽·표·그림·수식).", "attributes": [{"name": "pageStartsOn", "type": "enum", "required": true, "purpose": "BOTH | ODD | EVEN"}, {"name": "page", "type": "uint"}, {"name": "pic", "type": "uint"}, {"name": "tbl", "type": "uint"}, {"name": "equation", "type": "uint"}], "children": [], "parents": ["hp:secPr"]},
+  "hp:visibility": {"name": "visibility", "namespace": "paragraph", "purpose": "섹션 표시 옵션 (첫 페이지 머리말/꼬리말 감추기 등).", "attributes": [{"name": "hideFirstHeader", "type": "bool"}, {"name": "hideFirstFooter", "type": "bool"}, {"name": "border", "type": "enum", "purpose": "SHOW_ALL | HIDE_ALL | ..."}], "children": [], "parents": ["hp:secPr"]},
+  "hp:lineNumberShape": {"name": "lineNumberShape", "namespace": "paragraph", "purpose": "줄 번호 모양.", "attributes": [{"name": "restartType", "type": "uint"}, {"name": "countBy", "type": "uint"}, {"name": "distance", "type": "uint"}, {"name": "startNumber", "type": "uint"}], "children": [], "parents": ["hp:secPr"]},
+  "hp:footNotePr": {"name": "footNotePr", "namespace": "paragraph", "purpose": "각주 속성.", "attributes": [], "children": ["hp:autoNumFormat", "hp:noteLine", "hp:noteSpacing", "hp:numbering", "hp:placement"], "parents": ["hp:secPr"]},
+  "hp:endNotePr": {"name": "endNotePr", "namespace": "paragraph", "purpose": "미주 속성.", "attributes": [], "children": ["hp:autoNumFormat", "hp:noteLine", "hp:noteSpacing", "hp:numbering", "hp:placement"], "parents": ["hp:secPr"]},
+  "hp:pageBorderFill": {"name": "pageBorderFill", "namespace": "paragraph", "purpose": "페이지 테두리/배경.", "attributes": [{"name": "type", "type": "enum"}, {"name": "borderFillIDRef", "type": "IDREF"}, {"name": "textBorder", "type": "enum"}, {"name": "headerInside", "type": "bool"}, {"name": "footerInside", "type": "bool"}, {"name": "fillArea", "type": "enum"}], "children": ["hp:offset"], "parents": ["hp:secPr"]},
+  "hp:autoNumFormat": {"name": "autoNumFormat", "namespace": "paragraph", "purpose": "자동 번호 포맷(각주/미주/그림 번호).", "attributes": [{"name": "type", "type": "enum", "purpose": "DIGIT | DIGIT_PAREN | CIRCLED_DIGIT | ROMAN_CAPITAL | ROMAN_SMALL | LATIN_CAPITAL | LATIN_SMALL | HANGUL_SYLLABLE | HANGUL_JAMO | HANGUL_PHONETIC | IDEOGRAPH | DECAGON_CIRCLE | DECAGON_CIRCLE_HANJA | SYMBOL | USERCHAR"}, {"name": "userChar", "type": "string"}, {"name": "prefixChar", "type": "string"}, {"name": "suffixChar", "type": "string"}, {"name": "supscript", "type": "bool"}], "children": [], "parents": ["hp:footNotePr", "hp:endNotePr"]},
+  "hp:noteLine": {"name": "noteLine", "namespace": "paragraph", "purpose": "각주 구분선.", "attributes": [{"name": "length", "type": "int"}, {"name": "type", "type": "enum"}, {"name": "width", "type": "string"}, {"name": "color", "type": "color"}], "children": [], "parents": ["hp:footNotePr", "hp:endNotePr"]},
+  "hp:noteSpacing": {"name": "noteSpacing", "namespace": "paragraph", "purpose": "각주 간격.", "attributes": [{"name": "betweenNotes", "type": "uint"}, {"name": "belowLine", "type": "uint"}, {"name": "aboveLine", "type": "uint"}], "children": [], "parents": ["hp:footNotePr", "hp:endNotePr"]},
+  "hp:numbering": {"name": "numbering", "namespace": "paragraph", "purpose": "주석 번호 매기기 정책.", "attributes": [{"name": "type", "type": "enum", "purpose": "CONTINUOUS | ON_SECTION | ON_PAGE"}, {"name": "newNum", "type": "uint"}], "children": [], "parents": ["hp:footNotePr", "hp:endNotePr"]},
+  "hp:placement": {"name": "placement", "namespace": "paragraph", "purpose": "각주 배치.", "attributes": [{"name": "place", "type": "enum"}, {"name": "beneathText", "type": "bool"}], "children": [], "parents": ["hp:footNotePr", "hp:endNotePr"]},
+
+  "hp:tbl": {
+    "name": "tbl", "namespace": "paragraph",
+    "purpose": "표. AbstractShapeObject를 상속 → 위치·크기·여백·번호 속성을 가진다. 자식 hp:tr이 행을, 그 안의 hp:tc가 셀.",
+    "attributes": [
+      {"name": "id", "type": "uint", "required": false, "purpose": "객체 ID"},
+      {"name": "zOrder", "type": "int", "required": false},
+      {"name": "numberingType", "type": "enum", "required": false, "purpose": "TABLE | PICTURE | EQUATION | NONE"},
+      {"name": "textWrap", "type": "enum", "required": false, "purpose": "SQUARE | TIGHT | THROUGH | TOP_AND_BOTTOM | BEHIND_TEXT | IN_FRONT_OF_TEXT"},
+      {"name": "textFlow", "type": "enum", "required": false, "purpose": "BOTH_SIDES | LEFT_ONLY | RIGHT_ONLY | LARGEST_ONLY"},
+      {"name": "lock", "type": "bool", "required": false},
+      {"name": "dropcapstyle", "type": "enum", "required": false},
+      {"name": "pageBreak", "type": "enum", "required": false, "purpose": "NONE | TABLE | CELL"},
+      {"name": "repeatHeader", "type": "bool", "required": false, "purpose": "표머리행 반복"},
+      {"name": "rowCnt", "type": "uint", "required": true, "purpose": "행 개수"},
+      {"name": "colCnt", "type": "uint", "required": true, "purpose": "열 개수"},
+      {"name": "cellSpacing", "type": "HWPUNIT", "required": false},
+      {"name": "borderFillIDRef", "type": "IDREF", "required": false, "purpose": "표 외곽 borderFill"},
+      {"name": "noAdjust", "type": "bool", "required": false}
+    ],
+    "children": ["hp:sz", "hp:pos", "hp:outMargin", "hp:inMargin", "hp:tr", "hp:caption", "hp:cellzoneList", "hp:label"],
+    "parents": ["hp:run"]
+  },
+  "hp:tr": {
+    "name": "tr", "namespace": "paragraph",
+    "purpose": "표의 한 행. 자식으로 hp:tc 셀들.",
+    "attributes": [],
+    "children": ["hp:tc"],
+    "parents": ["hp:tbl"]
+  },
+  "hp:tc": {
+    "name": "tc", "namespace": "paragraph",
+    "purpose": "표 셀. cellAddr로 (열,행) 좌표, cellSpan으로 병합, cellSz로 크기. 셀 내용은 hp:subList 안에 hp:p들로.",
+    "attributes": [
+      {"name": "name", "type": "string", "required": false, "purpose": "셀 이름(보통 빈 문자열)"},
+      {"name": "header", "type": "bool", "required": false, "purpose": "헤더 셀 여부"},
+      {"name": "hasMargin", "type": "bool", "required": false},
+      {"name": "protect", "type": "bool", "required": false},
+      {"name": "editable", "type": "bool", "required": false},
+      {"name": "dirty", "type": "bool", "required": false},
+      {"name": "borderFillIDRef", "type": "IDREF", "required": true, "purpose": "셀 테두리"}
+    ],
+    "children": ["hp:cellAddr", "hp:cellSpan", "hp:cellSz", "hp:cellMargin", "hp:subList"],
+    "parents": ["hp:tr"]
+  },
+  "hp:cellAddr": {"name": "cellAddr", "namespace": "paragraph", "purpose": "셀 좌표. 0-based.", "attributes": [{"name": "colAddr", "type": "uint", "required": true}, {"name": "rowAddr", "type": "uint", "required": true}], "children": [], "parents": ["hp:tc"]},
+  "hp:cellSpan": {"name": "cellSpan", "namespace": "paragraph", "purpose": "병합 셀 크기 (1이면 비병합).", "attributes": [{"name": "colSpan", "type": "uint", "required": true}, {"name": "rowSpan", "type": "uint", "required": true}], "children": [], "parents": ["hp:tc"]},
+  "hp:cellSz": {"name": "cellSz", "namespace": "paragraph", "purpose": "셀 크기 (HWPUNIT).", "attributes": [{"name": "width", "type": "HWPUNIT", "required": true}, {"name": "height", "type": "HWPUNIT", "required": true}], "children": [], "parents": ["hp:tc"]},
+  "hp:cellMargin": {"name": "cellMargin", "namespace": "paragraph", "purpose": "셀 안쪽 여백.", "attributes": [{"name": "left", "type": "HWPUNIT"}, {"name": "right", "type": "HWPUNIT"}, {"name": "top", "type": "HWPUNIT"}, {"name": "bottom", "type": "HWPUNIT"}], "children": [], "parents": ["hp:tc"]},
+  "hp:subList": {
+    "name": "subList", "namespace": "paragraph",
+    "purpose": "단락 리스트 컨테이너. 표 셀, 캡션, 도형 텍스트, 머리말/꼬리말 본문 같은 '문단을 담는 객체' 안에 등장.",
+    "attributes": [
+      {"name": "id", "type": "string", "required": false},
+      {"name": "textDirection", "type": "enum"},
+      {"name": "lineWrap", "type": "enum", "purpose": "BREAK | SQUEEZE | KEEP"},
+      {"name": "vertAlign", "type": "enum", "purpose": "TOP | CENTER | BOTTOM"},
+      {"name": "linkListIDRef", "type": "IDREF"},
+      {"name": "linkListNextIDRef", "type": "IDREF"},
+      {"name": "textWidth", "type": "HWPUNIT"},
+      {"name": "textHeight", "type": "HWPUNIT"},
+      {"name": "hasTextRef", "type": "bool"},
+      {"name": "hasNumRef", "type": "bool"}
+    ],
+    "children": ["hp:p"],
+    "parents": ["hp:tc", "hp:caption", "hp:drawText", "hp:header", "hp:footer", "hp:footNote", "hp:endNote"]
+  },
+  "hp:caption": {"name": "caption", "namespace": "paragraph", "purpose": "표/그림 캡션.", "attributes": [{"name": "side", "type": "enum"}, {"name": "fullSz", "type": "bool"}, {"name": "width", "type": "HWPUNIT"}, {"name": "gap", "type": "HWPUNIT"}, {"name": "lastWidth", "type": "HWPUNIT"}], "children": ["hp:subList"], "parents": ["hp:tbl", "hp:pic"]},
+
+  "hp:sz": {"name": "sz", "namespace": "paragraph", "purpose": "AbstractShapeObject 자식 — 크기.", "attributes": [{"name": "width", "type": "HWPUNIT"}, {"name": "widthRelTo", "type": "enum", "purpose": "PAGE | PAPER | COLUMN | PARA | ABSOLUTE"}, {"name": "height", "type": "HWPUNIT"}, {"name": "heightRelTo", "type": "enum"}, {"name": "protect", "type": "bool"}], "children": [], "parents": ["hp:tbl", "hp:pic", "hp:rect", "hp:line", "hp:ellipse"]},
+  "hp:pos": {"name": "pos", "namespace": "paragraph", "purpose": "AbstractShapeObject 자식 — 위치/감싸기 옵션.", "attributes": [{"name": "treatAsChar", "type": "bool"}, {"name": "affectLSpacing", "type": "bool"}, {"name": "flowWithText", "type": "bool"}, {"name": "allowOverlap", "type": "bool"}, {"name": "holdAnchorAndSO", "type": "bool"}, {"name": "vertRelTo", "type": "enum"}, {"name": "horzRelTo", "type": "enum"}, {"name": "vertAlign", "type": "enum"}, {"name": "horzAlign", "type": "enum"}, {"name": "vertOffset", "type": "int"}, {"name": "horzOffset", "type": "int"}], "children": [], "parents": ["hp:tbl", "hp:pic", "hp:rect", "hp:line"]},
+  "hp:outMargin": {"name": "outMargin", "namespace": "paragraph", "purpose": "객체 바깥 여백.", "attributes": [{"name": "left", "type": "HWPUNIT"}, {"name": "right", "type": "HWPUNIT"}, {"name": "top", "type": "HWPUNIT"}, {"name": "bottom", "type": "HWPUNIT"}], "children": [], "parents": ["hp:tbl", "hp:pic", "hp:rect"]},
+  "hp:inMargin": {"name": "inMargin", "namespace": "paragraph", "purpose": "객체 안쪽 여백 (표 안쪽 디폴트 셀 여백).", "attributes": [{"name": "left", "type": "HWPUNIT"}, {"name": "right", "type": "HWPUNIT"}, {"name": "top", "type": "HWPUNIT"}, {"name": "bottom", "type": "HWPUNIT"}], "children": [], "parents": ["hp:tbl", "hp:pic"]},
+  "hp:offset": {"name": "offset", "namespace": "paragraph", "purpose": "오프셋 좌표 (페이지 테두리·도형 위치 보조).", "attributes": [{"name": "left", "type": "int"}, {"name": "right", "type": "int"}, {"name": "top", "type": "int"}, {"name": "bottom", "type": "int"}, {"name": "x", "type": "int"}, {"name": "y", "type": "int"}], "children": [], "parents": ["hp:pageBorderFill", "hp:pic", "hp:rect"]},
+
+  "hp:pic": {
+    "name": "pic", "namespace": "paragraph",
+    "purpose": "그림(이미지). href는 거의 안 쓰고 자식 hc:img/@binaryItemIDRef로 BinData에 들어있는 이미지 파일을 가리킨다.",
+    "attributes": [
+      {"name": "id", "type": "uint"},
+      {"name": "zOrder", "type": "int"},
+      {"name": "numberingType", "type": "enum"},
+      {"name": "textWrap", "type": "enum"},
+      {"name": "textFlow", "type": "enum"},
+      {"name": "lock", "type": "bool"},
+      {"name": "dropcapstyle", "type": "enum"},
+      {"name": "href", "type": "string", "purpose": "외부 링크(거의 안 씀)"},
+      {"name": "groupLevel", "type": "uint"},
+      {"name": "instid", "type": "uint"},
+      {"name": "reverse", "type": "bool"}
+    ],
+    "children": ["hp:offset", "hp:orgSz", "hp:curSz", "hp:flip", "hp:rotationInfo", "hp:renderingInfo", "hc:img", "hp:imgRect", "hp:imgClip", "hp:inMargin", "hp:imgDim", "hp:effects", "hp:sz", "hp:pos", "hp:outMargin", "hp:shapeComment", "hp:lineShape", "hp:caption"],
+    "parents": ["hp:run"]
+  },
+  "hc:img": {"name": "img", "namespace": "core", "purpose": "이미지 데이터 참조. binaryItemIDRef는 content.hpf 매니페스트의 opf:item/@id에 1:1 대응 → 실제 파일은 BinData/ 폴더 안에 있다.", "attributes": [{"name": "binaryItemIDRef", "type": "IDREF", "required": true}, {"name": "bright", "type": "int"}, {"name": "contrast", "type": "int"}, {"name": "effect", "type": "enum", "purpose": "REAL_PIC | GRAY_SCALE | BLACK_WHITE | PATTERN8X8"}, {"name": "alpha", "type": "uint"}], "children": [], "parents": ["hp:pic", "hh:bullet", "hc:imgBrush"]},
+  "hp:orgSz": {"name": "orgSz", "namespace": "paragraph", "purpose": "원본 크기.", "attributes": [{"name": "width", "type": "HWPUNIT"}, {"name": "height", "type": "HWPUNIT"}], "children": [], "parents": ["hp:pic"]},
+  "hp:curSz": {"name": "curSz", "namespace": "paragraph", "purpose": "현재(렌더링) 크기.", "attributes": [{"name": "width", "type": "HWPUNIT"}, {"name": "height", "type": "HWPUNIT"}], "children": [], "parents": ["hp:pic"]},
+  "hp:flip": {"name": "flip", "namespace": "paragraph", "purpose": "뒤집기.", "attributes": [{"name": "horizontal", "type": "bool"}, {"name": "vertical", "type": "bool"}], "children": [], "parents": ["hp:pic"]},
+  "hp:rotationInfo": {"name": "rotationInfo", "namespace": "paragraph", "purpose": "회전 정보.", "attributes": [{"name": "angle", "type": "int"}, {"name": "centerX", "type": "int"}, {"name": "centerY", "type": "int"}, {"name": "rotateimage", "type": "bool"}], "children": [], "parents": ["hp:pic"]},
+  "hp:renderingInfo": {"name": "renderingInfo", "namespace": "paragraph", "purpose": "렌더링 변환행렬.", "attributes": [], "children": ["hc:transMatrix", "hc:scaMatrix", "hc:rotMatrix"], "parents": ["hp:pic", "hp:rect"]},
+  "hp:imgRect": {"name": "imgRect", "namespace": "paragraph", "purpose": "이미지 영역 4점.", "attributes": [], "children": ["hc:pt0", "hc:pt1", "hc:pt2", "hc:pt3"], "parents": ["hp:pic"]},
+  "hp:imgClip": {"name": "imgClip", "namespace": "paragraph", "purpose": "이미지 클리핑 여백.", "attributes": [{"name": "left", "type": "int"}, {"name": "right", "type": "int"}, {"name": "top", "type": "int"}, {"name": "bottom", "type": "int"}], "children": [], "parents": ["hp:pic"]},
+  "hp:imgDim": {"name": "imgDim", "namespace": "paragraph", "purpose": "이미지 차원.", "attributes": [{"name": "dimwidth", "type": "HWPUNIT"}, {"name": "dimheight", "type": "HWPUNIT"}], "children": [], "parents": ["hp:pic"]},
+  "hp:effects": {"name": "effects", "namespace": "paragraph", "purpose": "이미지 효과(그림자/네온/소프트엣지/반사).", "attributes": [], "children": ["hp:shadow", "hp:glow", "hp:softEdge", "hp:reflection"], "parents": ["hp:pic", "hp:rect"]},
+  "hp:shapeComment": {"name": "shapeComment", "namespace": "paragraph", "purpose": "도형 설명(접근성).", "attributes": [], "children": [], "parents": ["hp:pic", "hp:rect"]},
+  "hp:lineShape": {"name": "lineShape", "namespace": "paragraph", "purpose": "테두리 선 모양.", "attributes": [{"name": "color", "type": "color"}, {"name": "width", "type": "string"}, {"name": "style", "type": "enum"}, {"name": "endCap", "type": "enum"}, {"name": "headStyle", "type": "enum"}, {"name": "tailStyle", "type": "enum"}, {"name": "headfill", "type": "bool"}, {"name": "tailfill", "type": "bool"}, {"name": "headSz", "type": "enum"}, {"name": "tailSz", "type": "enum"}, {"name": "outlineStyle", "type": "enum"}, {"name": "alpha", "type": "uint"}], "children": [], "parents": ["hp:pic", "hp:rect", "hp:line"]},
+  "hp:shadow": {"name": "shadow", "namespace": "paragraph", "purpose": "도형 그림자.", "attributes": [{"name": "type", "type": "enum"}, {"name": "color", "type": "color"}, {"name": "offsetX", "type": "int"}, {"name": "offsetY", "type": "int"}, {"name": "alpha", "type": "uint"}], "children": [], "parents": ["hp:rect", "hp:effects"]},
+
+  "hp:rect": {"name": "rect", "namespace": "paragraph", "purpose": "사각형 도형. 4점 좌표 + 선·채움.", "attributes": [{"name": "id", "type": "uint"}, {"name": "zOrder", "type": "int"}, {"name": "numberingType", "type": "enum"}, {"name": "textWrap", "type": "enum"}, {"name": "textFlow", "type": "enum"}, {"name": "lock", "type": "bool"}, {"name": "dropcapstyle", "type": "enum"}, {"name": "href", "type": "string"}, {"name": "groupLevel", "type": "uint"}, {"name": "instid", "type": "uint"}, {"name": "ratio", "type": "int", "purpose": "둥근모서리 비율"}], "children": ["hp:offset", "hp:orgSz", "hp:curSz", "hp:flip", "hp:rotationInfo", "hp:renderingInfo", "hp:lineShape", "hc:fillBrush", "hp:shadow", "hc:pt0", "hc:pt1", "hc:pt2", "hc:pt3", "hp:sz", "hp:pos", "hp:outMargin", "hp:drawText"], "parents": ["hp:run"]},
+  "hp:line": {"name": "line", "namespace": "paragraph", "purpose": "선 도형.", "attributes": [{"name": "id", "type": "uint"}, {"name": "isReverseHV", "type": "bool"}], "children": ["hp:offset", "hp:orgSz", "hp:curSz", "hp:flip", "hp:rotationInfo", "hp:renderingInfo", "hp:lineShape", "hp:sz", "hp:pos", "hp:outMargin"], "parents": ["hp:run"]},
+  "hp:ellipse": {"name": "ellipse", "namespace": "paragraph", "purpose": "타원 도형.", "attributes": [{"name": "id", "type": "uint"}], "children": ["hp:offset", "hp:orgSz", "hp:curSz", "hp:flip", "hp:rotationInfo", "hp:renderingInfo", "hp:lineShape", "hc:fillBrush", "hp:shadow", "hp:sz", "hp:pos", "hp:outMargin", "hp:drawText"], "parents": ["hp:run"]},
+  "hp:drawText": {"name": "drawText", "namespace": "paragraph", "purpose": "도형 안 텍스트 영역. 자식 subList에 단락들이 들어간다.", "attributes": [{"name": "lastWidth", "type": "HWPUNIT"}, {"name": "name", "type": "string"}], "children": ["hp:textMargin", "hp:subList"], "parents": ["hp:rect", "hp:ellipse", "hp:polygon", "hp:curve"]},
+
+  "hc:pt0": {"name": "pt0", "namespace": "core", "purpose": "좌표점 0.", "attributes": [{"name": "x", "type": "int"}, {"name": "y", "type": "int"}], "children": [], "parents": ["hp:imgRect", "hp:rect"]},
+  "hc:pt1": {"name": "pt1", "namespace": "core", "purpose": "좌표점 1.", "attributes": [{"name": "x", "type": "int"}, {"name": "y", "type": "int"}], "children": [], "parents": ["hp:imgRect", "hp:rect"]},
+  "hc:pt2": {"name": "pt2", "namespace": "core", "purpose": "좌표점 2.", "attributes": [{"name": "x", "type": "int"}, {"name": "y", "type": "int"}], "children": [], "parents": ["hp:imgRect", "hp:rect"]},
+  "hc:pt3": {"name": "pt3", "namespace": "core", "purpose": "좌표점 3.", "attributes": [{"name": "x", "type": "int"}, {"name": "y", "type": "int"}], "children": [], "parents": ["hp:imgRect", "hp:rect"]},
+  "hc:transMatrix": {"name": "transMatrix", "namespace": "core", "purpose": "이동 변환행렬.", "attributes": [{"name": "e1", "type": "string"}, {"name": "e2", "type": "string"}, {"name": "e3", "type": "string"}, {"name": "e4", "type": "string"}, {"name": "e5", "type": "string"}, {"name": "e6", "type": "string"}], "children": [], "parents": ["hp:renderingInfo"]},
+  "hc:scaMatrix": {"name": "scaMatrix", "namespace": "core", "purpose": "스케일 변환행렬.", "attributes": [{"name": "e1", "type": "string"}, {"name": "e2", "type": "string"}, {"name": "e3", "type": "string"}, {"name": "e4", "type": "string"}, {"name": "e5", "type": "string"}, {"name": "e6", "type": "string"}], "children": [], "parents": ["hp:renderingInfo"]},
+  "hc:rotMatrix": {"name": "rotMatrix", "namespace": "core", "purpose": "회전 변환행렬.", "attributes": [{"name": "e1", "type": "string"}, {"name": "e2", "type": "string"}, {"name": "e3", "type": "string"}, {"name": "e4", "type": "string"}, {"name": "e5", "type": "string"}, {"name": "e6", "type": "string"}], "children": [], "parents": ["hp:renderingInfo"]},
+  "hc:fillBrush": {"name": "fillBrush", "namespace": "core", "purpose": "채움 브러시 (단색/그라데이션/이미지). 자식 하나만.", "attributes": [], "children": ["hc:winBrush", "hc:imgBrush", "hc:gradation"], "parents": ["hh:borderFill", "hp:rect", "hp:ellipse"]},
+  "hc:winBrush": {"name": "winBrush", "namespace": "core", "purpose": "Windows 단색/패턴 채움.", "attributes": [{"name": "faceColor", "type": "color"}, {"name": "hatchColor", "type": "color"}, {"name": "hatchStyle", "type": "enum"}, {"name": "alpha", "type": "uint"}], "children": [], "parents": ["hc:fillBrush"]},
+  "hc:imgBrush": {"name": "imgBrush", "namespace": "core", "purpose": "이미지 채움 브러시.", "attributes": [{"name": "mode", "type": "enum", "purpose": "TILE | STRETCH | CENTER"}], "children": ["hc:img"], "parents": ["hc:fillBrush"]},
+  "hc:gradation": {"name": "gradation", "namespace": "core", "purpose": "그라데이션 채움.", "attributes": [{"name": "type", "type": "enum", "purpose": "LINEAR | RADIAL | CONICAL | SQUARE"}, {"name": "angle", "type": "int"}, {"name": "centerX", "type": "int"}, {"name": "centerY", "type": "int"}, {"name": "step", "type": "uint"}, {"name": "colors", "type": "string"}, {"name": "alpha", "type": "uint"}], "children": [], "parents": ["hc:fillBrush"]},
+
+  "hc:intent": {"name": "intent", "namespace": "core", "purpose": "단락 내어쓰기 — paraPr/margin 자식.", "attributes": [{"name": "value", "type": "int"}, {"name": "unit", "type": "enum", "purpose": "HWPUNIT | RATIO"}], "children": [], "parents": ["hh:margin"]},
+  "hc:left": {"name": "left", "namespace": "core", "purpose": "왼쪽 들여쓰기.", "attributes": [{"name": "value", "type": "int"}, {"name": "unit", "type": "enum"}], "children": [], "parents": ["hh:margin"]},
+  "hc:right": {"name": "right", "namespace": "core", "purpose": "오른쪽 들여쓰기.", "attributes": [{"name": "value", "type": "int"}, {"name": "unit", "type": "enum"}], "children": [], "parents": ["hh:margin"]},
+  "hc:prev": {"name": "prev", "namespace": "core", "purpose": "이전 단락과의 간격.", "attributes": [{"name": "value", "type": "int"}, {"name": "unit", "type": "enum"}], "children": [], "parents": ["hh:margin"]},
+  "hc:next": {"name": "next", "namespace": "core", "purpose": "다음 단락과의 간격.", "attributes": [{"name": "value", "type": "int"}, {"name": "unit", "type": "enum"}], "children": [], "parents": ["hh:margin"]},
+
+  "hh:head": {"name": "head", "namespace": "head", "purpose": "header.xml 루트. 모든 글자/단락/스타일/테두리 정의를 담는 ref 라이브러리.", "attributes": [{"name": "version", "type": "string"}, {"name": "secCnt", "type": "uint", "required": true, "purpose": "섹션 개수"}], "children": ["hh:beginNum", "hh:refList", "hh:forbiddenWordList", "hh:compatibleDocument", "hh:docOption", "hh:trackchageConfig"], "parents": []},
+  "hh:beginNum": {"name": "beginNum", "namespace": "head", "purpose": "문서 전체 시작 번호.", "attributes": [{"name": "page", "type": "uint"}, {"name": "footnote", "type": "uint"}, {"name": "endnote", "type": "uint"}, {"name": "pic", "type": "uint"}, {"name": "tbl", "type": "uint"}, {"name": "equation", "type": "uint"}], "children": [], "parents": ["hh:head"]},
+  "hh:refList": {"name": "refList", "namespace": "head", "purpose": "ID 참조 목록 컨테이너. 자식 별로 IDREF 풀을 담는다.", "attributes": [], "children": ["hh:fontfaces", "hh:borderFills", "hh:charProperties", "hh:tabProperties", "hh:paraProperties", "hh:styles", "hh:numberings", "hh:bullets", "hh:memoProperties"], "parents": ["hh:head"]},
+
+  "hh:fontfaces": {"name": "fontfaces", "namespace": "head", "purpose": "언어별 폰트 묶음.", "attributes": [{"name": "itemCnt", "type": "uint", "required": true}], "children": ["hh:fontface"], "parents": ["hh:refList"]},
+  "hh:fontface": {"name": "fontface", "namespace": "head", "purpose": "한 언어(hangul/latin/...) 의 폰트 리스트.", "attributes": [{"name": "lang", "type": "enum", "required": true, "purpose": "HANGUL | LATIN | HANJA | JAPANESE | OTHER | SYMBOL | USER"}, {"name": "fontCnt", "type": "uint"}], "children": ["hh:font"], "parents": ["hh:fontfaces"]},
+  "hh:font": {"name": "font", "namespace": "head", "purpose": "개별 폰트. id는 hh:fontRef/@<lang> 에서 참조.", "attributes": [{"name": "id", "type": "uint", "required": true}, {"name": "face", "type": "string", "required": true, "purpose": "글꼴 이름"}, {"name": "type", "type": "enum", "purpose": "ttf | hft | rep"}, {"name": "isEmbedded", "type": "bool"}], "children": ["hh:typeInfo", "hh:substFont"], "parents": ["hh:fontface"]},
+  "hh:typeInfo": {"name": "typeInfo", "namespace": "head", "purpose": "PANOSE 분류 (글꼴 모양 특성).", "attributes": [{"name": "familyType", "type": "uint"}, {"name": "weight", "type": "uint"}, {"name": "proportion", "type": "uint"}, {"name": "contrast", "type": "uint"}, {"name": "strokeVariation", "type": "uint"}, {"name": "armStyle", "type": "uint"}, {"name": "letterform", "type": "uint"}, {"name": "midline", "type": "uint"}, {"name": "xHeight", "type": "uint"}], "children": [], "parents": ["hh:font"]},
+  "hh:substFont": {"name": "substFont", "namespace": "head", "purpose": "원본 폰트가 없을 때 대체 폰트.", "attributes": [{"name": "face", "type": "string"}, {"name": "type", "type": "enum"}, {"name": "isEmbedded", "type": "bool"}, {"name": "binaryItemIDRef", "type": "string"}], "children": [], "parents": ["hh:font"]},
+
+  "hh:borderFills": {"name": "borderFills", "namespace": "head", "purpose": "테두리/채움 정의 목록.", "attributes": [{"name": "itemCnt", "type": "uint"}], "children": ["hh:borderFill"], "parents": ["hh:refList"]},
+  "hh:borderFill": {"name": "borderFill", "namespace": "head", "purpose": "표 셀/페이지/도형이 borderFillIDRef로 참조하는 단위. 사방 테두리 + 대각선 + 채움.", "attributes": [{"name": "id", "type": "uint", "required": true}, {"name": "threeD", "type": "bool"}, {"name": "shadow", "type": "bool"}, {"name": "centerLine", "type": "enum"}, {"name": "breakCellSeparateLine", "type": "bool"}], "children": ["hh:slash", "hh:backSlash", "hh:leftBorder", "hh:rightBorder", "hh:topBorder", "hh:bottomBorder", "hh:diagonal", "hc:fillBrush"], "parents": ["hh:borderFills"]},
+  "hh:leftBorder": {"name": "leftBorder", "namespace": "head", "purpose": "왼쪽 테두리 선.", "attributes": [{"name": "type", "type": "enum", "purpose": "NONE | SOLID | DASH | DOT | ... 16종"}, {"name": "width", "type": "string", "purpose": "mm 단위 string ex '0.12 mm'"}, {"name": "color", "type": "color"}], "children": [], "parents": ["hh:borderFill"]},
+  "hh:rightBorder": {"name": "rightBorder", "namespace": "head", "purpose": "오른쪽 테두리.", "attributes": [{"name": "type", "type": "enum"}, {"name": "width", "type": "string"}, {"name": "color", "type": "color"}], "children": [], "parents": ["hh:borderFill"]},
+  "hh:topBorder": {"name": "topBorder", "namespace": "head", "purpose": "위 테두리.", "attributes": [{"name": "type", "type": "enum"}, {"name": "width", "type": "string"}, {"name": "color", "type": "color"}], "children": [], "parents": ["hh:borderFill"]},
+  "hh:bottomBorder": {"name": "bottomBorder", "namespace": "head", "purpose": "아래 테두리.", "attributes": [{"name": "type", "type": "enum"}, {"name": "width", "type": "string"}, {"name": "color", "type": "color"}], "children": [], "parents": ["hh:borderFill"]},
+  "hh:diagonal": {"name": "diagonal", "namespace": "head", "purpose": "대각선.", "attributes": [{"name": "type", "type": "enum"}, {"name": "width", "type": "string"}, {"name": "color", "type": "color"}], "children": [], "parents": ["hh:borderFill"]},
+  "hh:slash": {"name": "slash", "namespace": "head", "purpose": "정방향 대각선.", "attributes": [{"name": "type", "type": "enum"}, {"name": "Crooked", "type": "bool"}, {"name": "isCounter", "type": "bool"}], "children": [], "parents": ["hh:borderFill"]},
+  "hh:backSlash": {"name": "backSlash", "namespace": "head", "purpose": "역방향 대각선.", "attributes": [{"name": "type", "type": "enum"}, {"name": "Crooked", "type": "bool"}, {"name": "isCounter", "type": "bool"}], "children": [], "parents": ["hh:borderFill"]},
+
+  "hh:charProperties": {"name": "charProperties", "namespace": "head", "purpose": "글자 모양 풀.", "attributes": [{"name": "itemCnt", "type": "uint"}], "children": ["hh:charPr"], "parents": ["hh:refList"]},
+  "hh:charPr": {
+    "name": "charPr", "namespace": "head",
+    "purpose": "글자 모양 단위. run의 charPrIDRef가 이 id를 가리킨다. 글꼴/크기/색/굵게/기울임/밑줄 등을 모은다.",
+    "attributes": [
+      {"name": "id", "type": "uint", "required": true},
+      {"name": "height", "type": "HWPUNIT100", "required": true, "purpose": "글자 크기 = pt × 100"},
+      {"name": "textColor", "type": "color", "required": true},
+      {"name": "shadeColor", "type": "color"},
+      {"name": "useFontSpace", "type": "bool"},
+      {"name": "useKerning", "type": "bool"},
+      {"name": "symMark", "type": "enum"},
+      {"name": "borderFillIDRef", "type": "IDREF"}
+    ],
+    "children": ["hh:fontRef", "hh:ratio", "hh:spacing", "hh:relSz", "hh:offset", "hh:underline", "hh:strikeout", "hh:outline", "hh:shadow", "hh:bold", "hh:italic", "hh:supscript", "hh:subscript", "hh:emboss", "hh:engrave"],
+    "parents": ["hh:charProperties"]
+  },
+  "hh:fontRef": {"name": "fontRef", "namespace": "head", "purpose": "언어별 폰트 ID 참조 (hh:font/@id로).", "attributes": [{"name": "hangul", "type": "IDREF"}, {"name": "latin", "type": "IDREF"}, {"name": "hanja", "type": "IDREF"}, {"name": "japanese", "type": "IDREF"}, {"name": "other", "type": "IDREF"}, {"name": "symbol", "type": "IDREF"}, {"name": "user", "type": "IDREF"}], "children": [], "parents": ["hh:charPr"]},
+  "hh:ratio": {"name": "ratio", "namespace": "head", "purpose": "장평 (가로 비율, 100=기본).", "attributes": [{"name": "hangul", "type": "uint"}, {"name": "latin", "type": "uint"}, {"name": "hanja", "type": "uint"}, {"name": "japanese", "type": "uint"}, {"name": "other", "type": "uint"}, {"name": "symbol", "type": "uint"}, {"name": "user", "type": "uint"}], "children": [], "parents": ["hh:charPr"]},
+  "hh:spacing": {"name": "spacing", "namespace": "head", "purpose": "자간.", "attributes": [{"name": "hangul", "type": "int"}, {"name": "latin", "type": "int"}, {"name": "hanja", "type": "int"}, {"name": "japanese", "type": "int"}, {"name": "other", "type": "int"}, {"name": "symbol", "type": "int"}, {"name": "user", "type": "int"}], "children": [], "parents": ["hh:charPr"]},
+  "hh:relSz": {"name": "relSz", "namespace": "head", "purpose": "언어별 상대 크기 비율.", "attributes": [{"name": "hangul", "type": "uint"}, {"name": "latin", "type": "uint"}, {"name": "hanja", "type": "uint"}, {"name": "japanese", "type": "uint"}, {"name": "other", "type": "uint"}, {"name": "symbol", "type": "uint"}, {"name": "user", "type": "uint"}], "children": [], "parents": ["hh:charPr"]},
+  "hh:offset": {"name": "offset", "namespace": "head", "purpose": "글자 위치 오프셋 (수직).", "attributes": [{"name": "hangul", "type": "int"}, {"name": "latin", "type": "int"}, {"name": "hanja", "type": "int"}, {"name": "japanese", "type": "int"}, {"name": "other", "type": "int"}, {"name": "symbol", "type": "int"}, {"name": "user", "type": "int"}], "children": [], "parents": ["hh:charPr"]},
+  "hh:underline": {"name": "underline", "namespace": "head", "purpose": "밑줄.", "attributes": [{"name": "type", "type": "enum", "purpose": "NONE | BOTTOM | CENTER | TOP"}, {"name": "shape", "type": "enum"}, {"name": "color", "type": "color"}], "children": [], "parents": ["hh:charPr"]},
+  "hh:strikeout": {"name": "strikeout", "namespace": "head", "purpose": "취소선.", "attributes": [{"name": "shape", "type": "enum"}, {"name": "color", "type": "color"}], "children": [], "parents": ["hh:charPr"]},
+  "hh:outline": {"name": "outline", "namespace": "head", "purpose": "외곽선(글자 윤곽).", "attributes": [{"name": "type", "type": "enum"}], "children": [], "parents": ["hh:charPr"]},
+  "hh:shadow": {"name": "shadow", "namespace": "head", "purpose": "글자 그림자 (도형 그림자가 아님).", "attributes": [{"name": "type", "type": "enum", "purpose": "NONE | CONTINUOUS | DISCONTINUOUS"}, {"name": "color", "type": "color"}, {"name": "offsetX", "type": "int"}, {"name": "offsetY", "type": "int"}], "children": [], "parents": ["hh:charPr"]},
+  "hh:bold": {"name": "bold", "namespace": "head", "purpose": "굵게 (있으면 true).", "attributes": [], "children": [], "parents": ["hh:charPr"]},
+  "hh:italic": {"name": "italic", "namespace": "head", "purpose": "기울임 (있으면 true).", "attributes": [], "children": [], "parents": ["hh:charPr"]},
+  "hh:supscript": {"name": "supscript", "namespace": "head", "purpose": "위첨자.", "attributes": [], "children": [], "parents": ["hh:charPr"]},
+  "hh:subscript": {"name": "subscript", "namespace": "head", "purpose": "아래첨자.", "attributes": [], "children": [], "parents": ["hh:charPr"]},
+  "hh:emboss": {"name": "emboss", "namespace": "head", "purpose": "양각.", "attributes": [], "children": [], "parents": ["hh:charPr"]},
+  "hh:engrave": {"name": "engrave", "namespace": "head", "purpose": "음각.", "attributes": [], "children": [], "parents": ["hh:charPr"]},
+
+  "hh:tabProperties": {"name": "tabProperties", "namespace": "head", "purpose": "탭 정의 풀.", "attributes": [{"name": "itemCnt", "type": "uint"}], "children": ["hh:tabPr"], "parents": ["hh:refList"]},
+  "hh:tabPr": {"name": "tabPr", "namespace": "head", "purpose": "탭 정의 단위. paraPr/@tabPrIDRef가 가리킴.", "attributes": [{"name": "id", "type": "uint"}, {"name": "autoTabLeft", "type": "bool"}, {"name": "autoTabRight", "type": "bool"}], "children": ["hh:tabItem", "hp:switch"], "parents": ["hh:tabProperties"]},
+  "hh:tabItem": {"name": "tabItem", "namespace": "head", "purpose": "탭 정류장 한 개.", "attributes": [{"name": "pos", "type": "HWPUNIT", "required": true}, {"name": "type", "type": "enum", "purpose": "LEFT | RIGHT | CENTER | DECIMAL"}, {"name": "leader", "type": "enum", "purpose": "SOLID | DOT | DASH | LINE | DOUBLE_LINE"}, {"name": "unit", "type": "enum"}], "children": [], "parents": ["hh:tabPr", "hp:case", "hp:default"]},
+
+  "hh:paraProperties": {"name": "paraProperties", "namespace": "head", "purpose": "단락 모양 풀.", "attributes": [{"name": "itemCnt", "type": "uint"}], "children": ["hh:paraPr"], "parents": ["hh:refList"]},
+  "hh:paraPr": {
+    "name": "paraPr", "namespace": "head",
+    "purpose": "단락 모양 단위. hp:p/@paraPrIDRef가 가리킴. 정렬·간격·테두리·들여쓰기·다음줄 설정 등.",
+    "attributes": [
+      {"name": "id", "type": "uint"},
+      {"name": "tabPrIDRef", "type": "IDREF"},
+      {"name": "condense", "type": "uint"},
+      {"name": "fontLineHeight", "type": "bool"},
+      {"name": "snapToGrid", "type": "bool"},
+      {"name": "suppressLineNumbers", "type": "bool"},
+      {"name": "checked", "type": "bool"},
+      {"name": "textDir", "type": "enum"}
+    ],
+    "children": ["hh:align", "hh:heading", "hh:breakSetting", "hh:margin", "hh:lineSpacing", "hh:autoSpacing", "hh:border", "hp:switch"],
+    "parents": ["hh:paraProperties"]
+  },
+  "hh:align": {"name": "align", "namespace": "head", "purpose": "수평·수직 정렬.", "attributes": [{"name": "horizontal", "type": "enum", "purpose": "LEFT | CENTER | RIGHT | JUSTIFY | DISTRIBUTE | DISTRIBUTE_SPACE"}, {"name": "vertical", "type": "enum", "purpose": "BASELINE | TOP | CENTER | BOTTOM"}], "children": [], "parents": ["hh:paraPr"]},
+  "hh:heading": {"name": "heading", "namespace": "head", "purpose": "문단 머리 (개요/번호/글머리 기호 연결).", "attributes": [{"name": "type", "type": "enum", "purpose": "NONE | OUTLINE | NUMBER | BULLET"}, {"name": "idRef", "type": "IDREF", "purpose": "hh:numbering 또는 hh:bullet/@id"}, {"name": "level", "type": "uint"}], "children": [], "parents": ["hh:paraPr"]},
+  "hh:breakSetting": {"name": "breakSetting", "namespace": "head", "purpose": "단락 줄바꿈 정책.", "attributes": [{"name": "breakLatinWord", "type": "enum", "purpose": "KEEP_WORD | HYPHENATION | BREAK_WORD"}, {"name": "breakNonLatinWord", "type": "enum"}, {"name": "widowOrphan", "type": "bool"}, {"name": "keepWithNext", "type": "bool"}, {"name": "keepLines", "type": "bool"}, {"name": "pageBreakBefore", "type": "bool"}, {"name": "lineWrap", "type": "enum"}], "children": [], "parents": ["hh:paraPr"]},
+  "hh:margin": {"name": "margin", "namespace": "head", "purpose": "단락 여백 (들여쓰기·이전/이후 간격). 5개 자식.", "attributes": [], "children": ["hc:intent", "hc:left", "hc:right", "hc:prev", "hc:next"], "parents": ["hh:paraPr", "hp:case", "hp:default"]},
+  "hh:lineSpacing": {"name": "lineSpacing", "namespace": "head", "purpose": "줄 간격.", "attributes": [{"name": "type", "type": "enum", "purpose": "PERCENT | FIXED | BETWEEN_LINES | AT_LEAST"}, {"name": "value", "type": "int"}, {"name": "unit", "type": "enum"}], "children": [], "parents": ["hh:paraPr", "hp:case", "hp:default"]},
+  "hh:autoSpacing": {"name": "autoSpacing", "namespace": "head", "purpose": "한영/한숫자 자동 띄우기.", "attributes": [{"name": "eAsianEng", "type": "bool"}, {"name": "eAsianNum", "type": "bool"}], "children": [], "parents": ["hh:paraPr"]},
+  "hh:border": {"name": "border", "namespace": "head", "purpose": "단락 테두리.", "attributes": [{"name": "borderFillIDRef", "type": "IDREF"}, {"name": "offsetLeft", "type": "int"}, {"name": "offsetRight", "type": "int"}, {"name": "offsetTop", "type": "int"}, {"name": "offsetBottom", "type": "int"}, {"name": "connect", "type": "bool"}, {"name": "ignoreMargin", "type": "bool"}], "children": [], "parents": ["hh:paraPr"]},
+
+  "hh:styles": {"name": "styles", "namespace": "head", "purpose": "스타일 풀. 한글의 '스타일' 메뉴에 보이는 항목들.", "attributes": [{"name": "itemCnt", "type": "uint"}], "children": ["hh:style"], "parents": ["hh:refList"]},
+  "hh:style": {"name": "style", "namespace": "head", "purpose": "스타일 정의. hp:p/@styleIDRef가 가리킴.", "attributes": [{"name": "id", "type": "uint"}, {"name": "type", "type": "enum", "purpose": "PARA | CHAR"}, {"name": "name", "type": "string", "purpose": "사용자가 보는 스타일 이름"}, {"name": "engName", "type": "string"}, {"name": "paraPrIDRef", "type": "IDREF"}, {"name": "charPrIDRef", "type": "IDREF"}, {"name": "nextStyleIDRef", "type": "IDREF", "purpose": "이 스타일로 작성 후 다음 줄에 적용되는 스타일"}, {"name": "langID", "type": "uint"}, {"name": "lockForm", "type": "bool"}], "children": [], "parents": ["hh:styles"]},
+
+  "hh:numberings": {"name": "numberings", "namespace": "head", "purpose": "번호 매기기 정의 풀.", "attributes": [{"name": "itemCnt", "type": "uint"}], "children": ["hh:numbering"], "parents": ["hh:refList"]},
+  "hh:numbering": {"name": "numbering", "namespace": "head", "purpose": "다단계 번호 정의 (1~10단계).", "attributes": [{"name": "id", "type": "uint"}, {"name": "start", "type": "uint"}], "children": ["hh:paraHead"], "parents": ["hh:numberings"]},
+  "hh:bullets": {"name": "bullets", "namespace": "head", "purpose": "글머리 기호 정의 풀.", "attributes": [{"name": "itemCnt", "type": "uint"}], "children": ["hh:bullet"], "parents": ["hh:refList"]},
+  "hh:bullet": {"name": "bullet", "namespace": "head", "purpose": "글머리 기호 단위.", "attributes": [{"name": "id", "type": "uint"}, {"name": "char", "type": "string"}, {"name": "useImage", "type": "bool"}], "children": ["hh:paraHead", "hc:img"], "parents": ["hh:bullets"]},
+  "hh:paraHead": {"name": "paraHead", "namespace": "head", "purpose": "단락 머리(번호) 한 단계 정의.", "attributes": [{"name": "start", "type": "uint"}, {"name": "level", "type": "uint"}, {"name": "align", "type": "enum"}, {"name": "useInstWidth", "type": "bool"}, {"name": "autoIndent", "type": "bool"}, {"name": "widthAdjust", "type": "int"}, {"name": "textOffsetType", "type": "enum"}, {"name": "textOffset", "type": "int"}, {"name": "numFormat", "type": "enum"}, {"name": "charPrIDRef", "type": "IDREF"}, {"name": "checkable", "type": "bool"}], "children": [], "parents": ["hh:numbering", "hh:bullet"]},
+
+  "hh:forbiddenWordList": {"name": "forbiddenWordList", "namespace": "head", "purpose": "금칙어 목록 (줄 끝/시작에 못 오는 글자).", "attributes": [{"name": "itemCnt", "type": "uint"}], "children": ["hh:forbiddenWord"], "parents": ["hh:head"]},
+  "hh:forbiddenWord": {"name": "forbiddenWord", "namespace": "head", "purpose": "금칙어 한 개.", "attributes": [], "children": [], "parents": ["hh:forbiddenWordList"]},
+  "hh:compatibleDocument": {"name": "compatibleDocument", "namespace": "head", "purpose": "호환 설정 (어떤 타 프로그램 호환 모드인지).", "attributes": [{"name": "targetProgram", "type": "enum", "purpose": "HWP200x | MS_WORD | OLD_HWP | NONE"}], "children": ["hh:layoutCompatibility"], "parents": ["hh:head"]},
+  "hh:layoutCompatibility": {"name": "layoutCompatibility", "namespace": "head", "purpose": "레이아웃 호환 플래그 묶음.", "attributes": [], "children": [], "parents": ["hh:compatibleDocument"]},
+  "hh:docOption": {"name": "docOption", "namespace": "head", "purpose": "문서 옵션.", "attributes": [], "children": ["hh:linkinfo"], "parents": ["hh:head"]},
+  "hh:linkinfo": {"name": "linkinfo", "namespace": "head", "purpose": "외부 링크 상속 옵션.", "attributes": [{"name": "path", "type": "string"}, {"name": "pageInherit", "type": "bool"}, {"name": "footnoteInherit", "type": "bool"}], "children": [], "parents": ["hh:docOption"]},
+  "hh:trackchageConfig": {"name": "trackchageConfig", "namespace": "head", "purpose": "변경 내용 추적 설정.", "attributes": [{"name": "flags", "type": "uint"}], "children": [], "parents": ["hh:head"]},
+
+  "hp:switch": {"name": "switch", "namespace": "paragraph", "purpose": "markup-compatibility 분기. 같은 의미를 다른 namespace(예: 2011 vs 2016)로 표현할 때 case/default로 묶는다.", "attributes": [], "children": ["hp:case", "hp:default"], "parents": ["hh:paraPr", "hh:tabPr"]},
+  "hp:case": {"name": "case", "namespace": "paragraph", "purpose": "switch 안 — namespace 속성이 매칭될 때 적용.", "attributes": [{"name": "namespace", "type": "string", "required": true, "purpose": "이 case가 요구하는 namespace URI"}], "children": ["hh:tabItem", "hh:margin", "hh:lineSpacing"], "parents": ["hp:switch"]},
+  "hp:default": {"name": "default", "namespace": "paragraph", "purpose": "switch fallback (case 매칭 안 될 때).", "attributes": [], "children": ["hh:tabItem", "hh:margin", "hh:lineSpacing"], "parents": ["hp:switch"]},
+
+  "hp:colPr": {"name": "colPr", "namespace": "paragraph", "purpose": "단(컬럼) 정의.", "attributes": [{"name": "id", "type": "string"}, {"name": "type", "type": "enum"}, {"name": "layout", "type": "enum"}, {"name": "colCount", "type": "uint"}, {"name": "sameSz", "type": "bool"}, {"name": "sameGap", "type": "uint"}], "children": [], "parents": ["hp:ctrl"]},
+  "hp:pageNum": {"name": "pageNum", "namespace": "paragraph", "purpose": "쪽 번호.", "attributes": [{"name": "pos", "type": "enum"}, {"name": "formatType", "type": "enum"}, {"name": "sideChar", "type": "string"}], "children": [], "parents": ["hp:ctrl"]},
+  "hp:pageHiding": {"name": "pageHiding", "namespace": "paragraph", "purpose": "쪽 요소 숨김.", "attributes": [{"name": "hideHeader", "type": "bool"}, {"name": "hideFooter", "type": "bool"}, {"name": "hideMasterPage", "type": "bool"}, {"name": "hideBorder", "type": "bool"}, {"name": "hideFill", "type": "bool"}, {"name": "hidePageNum", "type": "bool"}], "children": [], "parents": ["hp:ctrl"]},
+  "hp:newNum": {"name": "newNum", "namespace": "paragraph", "purpose": "새 번호 시작.", "attributes": [{"name": "num", "type": "uint"}, {"name": "numType", "type": "enum"}], "children": [], "parents": ["hp:ctrl"]},
+  "hp:bookmark": {"name": "bookmark", "namespace": "paragraph", "purpose": "책갈피.", "attributes": [{"name": "name", "type": "string"}], "children": [], "parents": ["hp:ctrl"]},
+
+  "opf:package": {"name": "package", "namespace": "opf", "purpose": "content.hpf 루트 — EPUB OPF 패키지 정의를 빌려서 HWPX 파트들을 묶는다.", "attributes": [{"name": "version", "type": "string"}, {"name": "identifier", "type": "string"}, {"name": "id", "type": "string"}], "children": ["opf:metadata", "opf:manifest", "opf:spine"], "parents": []},
+  "opf:metadata": {"name": "metadata", "namespace": "opf", "purpose": "패키지 메타데이터.", "attributes": [], "children": ["opf:title", "opf:language", "opf:meta", "opf:identifier"], "parents": ["opf:package"]},
+  "opf:manifest": {"name": "manifest", "namespace": "opf", "purpose": "패키지 안의 모든 파일 목록.", "attributes": [], "children": ["opf:item"], "parents": ["opf:package"]},
+  "opf:item": {"name": "item", "namespace": "opf", "purpose": "패키지 안 파일 한 개. id는 BinData 이미지를 hc:img/@binaryItemIDRef가 참조하는 키.", "attributes": [{"name": "id", "type": "string", "required": true}, {"name": "href", "type": "string", "required": true, "purpose": "패키지 안 상대 경로"}, {"name": "type", "type": "string", "purpose": "MIME 타입 (image/jpeg, application/xml, ...)"}, {"name": "isEmbeded", "type": "bool"}], "children": [], "parents": ["opf:manifest"]},
+  "opf:spine": {"name": "spine", "namespace": "opf", "purpose": "섹션 순서.", "attributes": [], "children": ["opf:itemref"], "parents": ["opf:package"]},
+  "opf:itemref": {"name": "itemref", "namespace": "opf", "purpose": "spine 안 — 어떤 섹션 xml을 어느 순서로.", "attributes": [{"name": "idref", "type": "IDREF", "required": true, "purpose": "opf:item/@id"}, {"name": "linear", "type": "string"}], "children": [], "parents": ["opf:spine"]},
+  "opf:title": {"name": "title", "namespace": "opf", "purpose": "문서 제목.", "attributes": [], "children": [], "parents": ["opf:metadata"]},
+  "opf:language": {"name": "language", "namespace": "opf", "purpose": "주 언어.", "attributes": [], "children": [], "parents": ["opf:metadata"]},
+  "opf:meta": {"name": "meta", "namespace": "opf", "purpose": "key-value 메타.", "attributes": [{"name": "name", "type": "string"}, {"name": "content", "type": "string"}, {"name": "xml:space", "type": "enum"}], "children": [], "parents": ["opf:metadata"]}
+}

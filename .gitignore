@@ -1,0 +1,20 @@
+# Python
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+*.egg-info/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Samples (실제 문서는 로컬 보관)
+samples/
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/

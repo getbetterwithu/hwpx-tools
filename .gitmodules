@@ -1,0 +1,6 @@
+[submodule "hwp-mcp"]
+	path = hwp-mcp
+	url = https://github.com/treesoop/hwp-mcp.git
+[submodule "hwpxskill"]
+	path = hwpxskill
+	url = https://github.com/Canine89/hwpxskill.git

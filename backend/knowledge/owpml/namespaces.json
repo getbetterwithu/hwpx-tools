@@ -1,0 +1,106 @@
+{
+  "_comment": "OWPML / HWPX namespace map. Source: hancom-io/hwpx-owpml-model OWPML/Base/NamespacePrefix.{h,cpp}. The '2011' column is the legacy URI baked into all HWPX files produced by Hangul (still current as of Hangul 2024 — the URI literally contains '2011', but is the active version). '2024' column is the modernised OWPML 2024 URI used in newer Hancom drafts/specs; in practice, real-world .hwpx files almost always use the 2011 URIs.",
+  "prefixes": {
+    "hp": {
+      "purpose": "paragraph (본문 문단 모델: 단락·런·텍스트·표·그림 등)",
+      "2011": "http://www.hancom.co.kr/hwpml/2011/paragraph",
+      "2024": "http://www.owpml.org/owpml/2024/paragraph"
+    },
+    "hp10": {
+      "purpose": "paragraph 2016 확장 (alternate content용 신규 속성)",
+      "2011": "http://www.hancom.co.kr/hwpml/2016/paragraph",
+      "2024": "http://www.owpml.org/owpml/2024/paragraph10"
+    },
+    "hs": {
+      "purpose": "section (Contents/sectionN.xml의 루트 hs:sec)",
+      "2011": "http://www.hancom.co.kr/hwpml/2011/section",
+      "2024": "http://www.owpml.org/owpml/2024/section"
+    },
+    "hh": {
+      "purpose": "head (header.xml — fontfaces, borderFills, charPr, paraPr, styles 등)",
+      "2011": "http://www.hancom.co.kr/hwpml/2011/head",
+      "2024": "http://www.owpml.org/owpml/2024/head"
+    },
+    "hc": {
+      "purpose": "core (color, fillBrush, points, matrix, margin 공통 타입)",
+      "2011": "http://www.hancom.co.kr/hwpml/2011/core",
+      "2024": "http://www.owpml.org/owpml/2024/core"
+    },
+    "hv": {
+      "purpose": "version (version.xml)",
+      "2011": "http://www.hancom.co.kr/hwpml/2011/version",
+      "2024": "http://www.owpml.org/owpml/2024/version"
+    },
+    "ha": {
+      "purpose": "app (settings.xml — application config)",
+      "2011": "http://www.hancom.co.kr/hwpml/2011/app",
+      "2024": "http://www.owpml.org/owpml/2024/app"
+    },
+    "hhs": {
+      "purpose": "history (변경 이력)",
+      "2011": "http://www.hancom.co.kr/hwpml/2011/history",
+      "2024": "http://www.owpml.org/owpml/2024/history"
+    },
+    "hm": {
+      "purpose": "master-page",
+      "2011": "http://www.hancom.co.kr/hwpml/2011/master-page",
+      "2024": "http://www.owpml.org/owpml/2024/master-page"
+    },
+    "hpf": {
+      "purpose": "package file (content.hpf 매니페스트)",
+      "2011": "http://www.hancom.co.kr/schema/2011/hpf",
+      "2024": "http://www.owpml.org/owpml/2024/hpf"
+    },
+    "hwpunitchar": {
+      "purpose": "HwpUnitChar (2016 확장 — 문자 단위 보강)",
+      "2011": "http://www.hancom.co.kr/hwpml/2016/HwpUnitChar",
+      "2024": "http://www.owpml.org/owpml/2024/hwpunitchar"
+    },
+    "ooxmlchart": {
+      "purpose": "OOXML 차트 호환 (alternatecontent 안에서 사용)",
+      "2011": "http://www.hancom.co.kr/hwpml/2016/ooxmlchart",
+      "2024": "http://www.owpml.org/owpml/2024/ooxmlchart"
+    },
+    "dc": {
+      "purpose": "Dublin Core (메타데이터)",
+      "2011": "http://purl.org/dc/elements/1.1/",
+      "2024": "http://purl.org/dc/elements/1.1/"
+    },
+    "opf": {
+      "purpose": "EPUB OPF (content.hpf 안에서 패키지·매니페스트·스파인 표현)",
+      "2011": "http://www.idpf.org/2007/opf/",
+      "2024": "http://www.idpf.org/2007/opf/"
+    },
+    "ocf": {
+      "purpose": "OCF container (META-INF/container.xml)",
+      "2011": "urn:oasis:names:tc:opendocument:xmlns:container",
+      "2024": "urn:oasis:names:tc:opendocument:xmlns:container"
+    },
+    "odf": {
+      "purpose": "ODF manifest (META-INF/manifest.xml)",
+      "2011": "urn:oasis:names:tc:opendocument:xmlns:manifest:1.0",
+      "2024": "urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"
+    },
+    "config": {
+      "purpose": "ODF config (settings 값 표현)",
+      "2011": "urn:oasis:names:tc:opendocument:xmlns:config:1.0",
+      "2024": "urn:oasis:names:tc:opendocument:xmlns:config:1.0"
+    },
+    "rdf": {
+      "purpose": "RDF (rdf 메타데이터)",
+      "2011": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+      "2024": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    },
+    "epub": {
+      "purpose": "EPUB 호환 (epub:switch 등 markup compatibility)",
+      "2011": "http://www.idpf.org/2007/ops",
+      "2024": "http://www.idpf.org/2007/ops"
+    }
+  },
+  "notes": [
+    "한 .hwpx 안에서 Contents/section0.xml의 루트 hs:sec 엘리먼트가 위 모든 prefix를 한 번에 선언하는 게 관례.",
+    "namespace URI가 '2011'을 포함하지만, 그것이 곧 구버전이라는 뜻은 아님 — 현행 한컴 한글이 만들어내는 표준 URI.",
+    "'2024' URI는 owpml.org 신규 표준 초안 기준이며, 실제 파일에서 보이지 않으면 매핑 시 안전하게 '2011' URI로 정규화 가능.",
+    "epub:switch/case/default는 markup compatibility용 — 같은 의미의 두 표현을 prefix별로 묶기 위한 wrapper."
+  ]
+}

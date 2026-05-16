@@ -1,0 +1,372 @@
+{
+  "_comment": "Quick lookup of allowed direct children for each OWPML element. Derived from tags.json. Only tags with at least one child appear here.",
+  "hs:sec": [
+    "hp:p"
+  ],
+  "hp:p": [
+    "hp:run",
+    "hp:linesegarray"
+  ],
+  "hp:run": [
+    "hp:secPr",
+    "hp:ctrl",
+    "hp:t",
+    "hp:tbl",
+    "hp:pic",
+    "hp:ole",
+    "hp:container",
+    "hp:equation",
+    "hp:line",
+    "hp:rect",
+    "hp:ellipse",
+    "hp:arc",
+    "hp:polygon",
+    "hp:curve",
+    "hp:connectLine",
+    "hp:textart",
+    "hp:compose",
+    "hp:dutmal",
+    "hp:btn",
+    "hp:radioBtn",
+    "hp:checkBtn",
+    "hp:comboBox",
+    "hp:listBox",
+    "hp:edit",
+    "hp:scrollBar",
+    "hp:video",
+    "hp:markpenBegin",
+    "hp:markpenEnd",
+    "hp:chart"
+  ],
+  "hp:t": [
+    "hp:tab",
+    "hp:lineBreak",
+    "hp:hypen",
+    "hp:nbSpace",
+    "hp:fwSpace",
+    "hp:markpenBegin",
+    "hp:markpenEnd",
+    "hp:titleMark",
+    "hp:tcInsertBegin",
+    "hp:tcInsertEnd",
+    "hp:tcDeleteBegin",
+    "hp:tcDeleteEnd"
+  ],
+  "hp:linesegarray": [
+    "hp:lineseg"
+  ],
+  "hp:ctrl": [
+    "hp:colPr",
+    "hp:pageNum",
+    "hp:pageHiding",
+    "hp:newNum",
+    "hp:autoNum",
+    "hp:bookmark",
+    "hp:header",
+    "hp:footer",
+    "hp:footNote",
+    "hp:endNote",
+    "hp:fieldBegin",
+    "hp:fieldEnd",
+    "hp:indexmark",
+    "hp:hiddenComment"
+  ],
+  "hp:secPr": [
+    "hp:grid",
+    "hp:startNum",
+    "hp:visibility",
+    "hp:lineNumberShape",
+    "hp:pagePr",
+    "hp:footNotePr",
+    "hp:endNotePr",
+    "hp:pageBorderFill",
+    "hp:masterPage",
+    "hp:presentation"
+  ],
+  "hp:pagePr": [
+    "hp:margin"
+  ],
+  "hp:footNotePr": [
+    "hp:autoNumFormat",
+    "hp:noteLine",
+    "hp:noteSpacing",
+    "hp:numbering",
+    "hp:placement"
+  ],
+  "hp:endNotePr": [
+    "hp:autoNumFormat",
+    "hp:noteLine",
+    "hp:noteSpacing",
+    "hp:numbering",
+    "hp:placement"
+  ],
+  "hp:pageBorderFill": [
+    "hp:offset"
+  ],
+  "hp:tbl": [
+    "hp:sz",
+    "hp:pos",
+    "hp:outMargin",
+    "hp:inMargin",
+    "hp:tr",
+    "hp:caption",
+    "hp:cellzoneList",
+    "hp:label"
+  ],
+  "hp:tr": [
+    "hp:tc"
+  ],
+  "hp:tc": [
+    "hp:cellAddr",
+    "hp:cellSpan",
+    "hp:cellSz",
+    "hp:cellMargin",
+    "hp:subList"
+  ],
+  "hp:subList": [
+    "hp:p"
+  ],
+  "hp:caption": [
+    "hp:subList"
+  ],
+  "hp:pic": [
+    "hp:offset",
+    "hp:orgSz",
+    "hp:curSz",
+    "hp:flip",
+    "hp:rotationInfo",
+    "hp:renderingInfo",
+    "hc:img",
+    "hp:imgRect",
+    "hp:imgClip",
+    "hp:inMargin",
+    "hp:imgDim",
+    "hp:effects",
+    "hp:sz",
+    "hp:pos",
+    "hp:outMargin",
+    "hp:shapeComment",
+    "hp:lineShape",
+    "hp:caption"
+  ],
+  "hp:renderingInfo": [
+    "hc:transMatrix",
+    "hc:scaMatrix",
+    "hc:rotMatrix"
+  ],
+  "hp:imgRect": [
+    "hc:pt0",
+    "hc:pt1",
+    "hc:pt2",
+    "hc:pt3"
+  ],
+  "hp:effects": [
+    "hp:shadow",
+    "hp:glow",
+    "hp:softEdge",
+    "hp:reflection"
+  ],
+  "hp:rect": [
+    "hp:offset",
+    "hp:orgSz",
+    "hp:curSz",
+    "hp:flip",
+    "hp:rotationInfo",
+    "hp:renderingInfo",
+    "hp:lineShape",
+    "hc:fillBrush",
+    "hp:shadow",
+    "hc:pt0",
+    "hc:pt1",
+    "hc:pt2",
+    "hc:pt3",
+    "hp:sz",
+    "hp:pos",
+    "hp:outMargin",
+    "hp:drawText"
+  ],
+  "hp:line": [
+    "hp:offset",
+    "hp:orgSz",
+    "hp:curSz",
+    "hp:flip",
+    "hp:rotationInfo",
+    "hp:renderingInfo",
+    "hp:lineShape",
+    "hp:sz",
+    "hp:pos",
+    "hp:outMargin"
+  ],
+  "hp:ellipse": [
+    "hp:offset",
+    "hp:orgSz",
+    "hp:curSz",
+    "hp:flip",
+    "hp:rotationInfo",
+    "hp:renderingInfo",
+    "hp:lineShape",
+    "hc:fillBrush",
+    "hp:shadow",
+    "hp:sz",
+    "hp:pos",
+    "hp:outMargin",
+    "hp:drawText"
+  ],
+  "hp:drawText": [
+    "hp:textMargin",
+    "hp:subList"
+  ],
+  "hc:fillBrush": [
+    "hc:winBrush",
+    "hc:imgBrush",
+    "hc:gradation"
+  ],
+  "hc:imgBrush": [
+    "hc:img"
+  ],
+  "hh:head": [
+    "hh:beginNum",
+    "hh:refList",
+    "hh:forbiddenWordList",
+    "hh:compatibleDocument",
+    "hh:docOption",
+    "hh:trackchageConfig"
+  ],
+  "hh:refList": [
+    "hh:fontfaces",
+    "hh:borderFills",
+    "hh:charProperties",
+    "hh:tabProperties",
+    "hh:paraProperties",
+    "hh:styles",
+    "hh:numberings",
+    "hh:bullets",
+    "hh:memoProperties"
+  ],
+  "hh:fontfaces": [
+    "hh:fontface"
+  ],
+  "hh:fontface": [
+    "hh:font"
+  ],
+  "hh:font": [
+    "hh:typeInfo",
+    "hh:substFont"
+  ],
+  "hh:borderFills": [
+    "hh:borderFill"
+  ],
+  "hh:borderFill": [
+    "hh:slash",
+    "hh:backSlash",
+    "hh:leftBorder",
+    "hh:rightBorder",
+    "hh:topBorder",
+    "hh:bottomBorder",
+    "hh:diagonal",
+    "hc:fillBrush"
+  ],
+  "hh:charProperties": [
+    "hh:charPr"
+  ],
+  "hh:charPr": [
+    "hh:fontRef",
+    "hh:ratio",
+    "hh:spacing",
+    "hh:relSz",
+    "hh:offset",
+    "hh:underline",
+    "hh:strikeout",
+    "hh:outline",
+    "hh:shadow",
+    "hh:bold",
+    "hh:italic",
+    "hh:supscript",
+    "hh:subscript",
+    "hh:emboss",
+    "hh:engrave"
+  ],
+  "hh:tabProperties": [
+    "hh:tabPr"
+  ],
+  "hh:tabPr": [
+    "hh:tabItem",
+    "hp:switch"
+  ],
+  "hh:paraProperties": [
+    "hh:paraPr"
+  ],
+  "hh:paraPr": [
+    "hh:align",
+    "hh:heading",
+    "hh:breakSetting",
+    "hh:margin",
+    "hh:lineSpacing",
+    "hh:autoSpacing",
+    "hh:border",
+    "hp:switch"
+  ],
+  "hh:margin": [
+    "hc:intent",
+    "hc:left",
+    "hc:right",
+    "hc:prev",
+    "hc:next"
+  ],
+  "hh:styles": [
+    "hh:style"
+  ],
+  "hh:numberings": [
+    "hh:numbering"
+  ],
+  "hh:numbering": [
+    "hh:paraHead"
+  ],
+  "hh:bullets": [
+    "hh:bullet"
+  ],
+  "hh:bullet": [
+    "hh:paraHead",
+    "hc:img"
+  ],
+  "hh:forbiddenWordList": [
+    "hh:forbiddenWord"
+  ],
+  "hh:compatibleDocument": [
+    "hh:layoutCompatibility"
+  ],
+  "hh:docOption": [
+    "hh:linkinfo"
+  ],
+  "hp:switch": [
+    "hp:case",
+    "hp:default"
+  ],
+  "hp:case": [
+    "hh:tabItem",
+    "hh:margin",
+    "hh:lineSpacing"
+  ],
+  "hp:default": [
+    "hh:tabItem",
+    "hh:margin",
+    "hh:lineSpacing"
+  ],
+  "opf:package": [
+    "opf:metadata",
+    "opf:manifest",
+    "opf:spine"
+  ],
+  "opf:metadata": [
+    "opf:title",
+    "opf:language",
+    "opf:meta",
+    "opf:identifier"
+  ],
+  "opf:manifest": [
+    "opf:item"
+  ],
+  "opf:spine": [
+    "opf:itemref"
+  ]
+}
