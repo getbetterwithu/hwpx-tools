@@ -6,11 +6,13 @@ Run from the backend/ directory:
 from __future__ import annotations
 
 import io
+from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from hwpx_core import HwpxDocument, ValidationReport
@@ -28,6 +30,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# API 라우터 — 로컬 개발(vite proxy: /api → 8000)과 프로덕션(same-origin /api) 모두 동작
+from fastapi import APIRouter
+router = APIRouter(prefix="/api")
+
+# 프론트엔드 정적 파일 서빙 (Railway 배포 시)
+_STATIC_DIR = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+if _STATIC_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=_STATIC_DIR / "assets"), name="assets")
+    app.mount("/samples", StaticFiles(directory=_STATIC_DIR / "samples"), name="samples")
 
 
 # ---------- response models -----------------------------------------------
@@ -112,12 +124,12 @@ def _require(session_id: str) -> Session:
 
 # ---------- routes --------------------------------------------------------
 
-@app.get("/health")
+@router.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/upload", response_model=UploadResponse)
+@router.post("/upload", response_model=UploadResponse)
 async def upload(file: UploadFile = File(...)) -> UploadResponse:
     if not file.filename or not file.filename.lower().endswith(".hwpx"):
         raise HTTPException(status_code=400, detail="Please upload a .hwpx file")
@@ -134,13 +146,13 @@ async def upload(file: UploadFile = File(...)) -> UploadResponse:
     )
 
 
-@app.get("/preview/{session_id}", response_model=PreviewResponse)
+@router.get("/preview/{session_id}", response_model=PreviewResponse)
 def preview(session_id: str) -> PreviewResponse:
     s = _require(session_id)
     return PreviewResponse(html=s.doc.to_html(), **_flags(s))
 
 
-@app.post("/replace/{session_id}", response_model=ReplaceResponse)
+@router.post("/replace/{session_id}", response_model=ReplaceResponse)
 def replace_text(session_id: str, body: ReplaceRequest) -> ReplaceResponse:
     s = _require(session_id)
     n = s.doc.replace_text(body.old, body.new, count=body.count)
@@ -150,7 +162,7 @@ def replace_text(session_id: str, body: ReplaceRequest) -> ReplaceResponse:
     return ReplaceResponse(replaced=n, html=html, **_flags(s))
 
 
-@app.post("/edits/{session_id}", response_model=EditsResponse)
+@router.post("/edits/{session_id}", response_model=EditsResponse)
 def apply_edits(session_id: str, body: EditsRequest) -> EditsResponse:
     s = _require(session_id)
     changed = s.doc.apply_edits(body.edits)
@@ -160,28 +172,28 @@ def apply_edits(session_id: str, body: EditsRequest) -> EditsResponse:
     return EditsResponse(changed=changed, html=html, **_flags(s))
 
 
-@app.post("/undo/{session_id}", response_model=UndoRedoResponse)
+@router.post("/undo/{session_id}", response_model=UndoRedoResponse)
 def undo(session_id: str) -> UndoRedoResponse:
     s = _require(session_id)
     moved = s.undo()
     return UndoRedoResponse(moved=moved, html=s.doc.to_html(), **_flags(s))
 
 
-@app.post("/redo/{session_id}", response_model=UndoRedoResponse)
+@router.post("/redo/{session_id}", response_model=UndoRedoResponse)
 def redo(session_id: str) -> UndoRedoResponse:
     s = _require(session_id)
     moved = s.redo()
     return UndoRedoResponse(moved=moved, html=s.doc.to_html(), **_flags(s))
 
 
-@app.get("/validate/{session_id}", response_model=ValidationSummary)
+@router.get("/validate/{session_id}", response_model=ValidationSummary)
 def validate_session(session_id: str) -> ValidationSummary:
     """Run a full structural check; returns all issues (errors + warnings)."""
     s = _require(session_id)
     return _summarize(s.doc.validate(), include_issues=True)
 
 
-@app.get("/download/{session_id}")
+@router.get("/download/{session_id}")
 def download(session_id: str) -> StreamingResponse:
     s = _require(session_id)
     # If validation now fails, it's almost certainly a bug in OUR code —
@@ -207,7 +219,7 @@ def download(session_id: str) -> StreamingResponse:
     )
 
 
-@app.delete("/session/{session_id}")
+@router.delete("/session/{session_id}")
 def drop(session_id: str) -> dict[str, str]:
     store.drop(session_id)
     return {"status": "dropped"}
@@ -235,12 +247,12 @@ class AIChatResponse(HistoryFlags):
     html: str
 
 
-@app.get("/ai/providers")
+@router.get("/ai/providers")
 def ai_providers() -> dict:
     return {"providers": available_providers()}
 
 
-@app.post("/ai/chat/{session_id}", response_model=AIChatResponse)
+@router.post("/ai/chat/{session_id}", response_model=AIChatResponse)
 async def ai_chat(session_id: str, body: AIChatRequest) -> AIChatResponse:
     s = _require(session_id)
     if not body.api_key:
@@ -281,3 +293,15 @@ async def ai_chat(session_id: str, body: AIChatRequest) -> AIChatResponse:
         html=s.doc.to_html(),
         **_flags(s),
     )
+
+
+app.include_router(router)
+
+
+# SPA fallback — API 라우트가 아닌 모든 경로를 index.html로
+@app.get("/{full_path:path}", include_in_schema=False)
+async def spa_fallback(full_path: str):
+    index = _STATIC_DIR / "index.html"
+    if index.exists():
+        return FileResponse(index)
+    return {"detail": "frontend not built"}
