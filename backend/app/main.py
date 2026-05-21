@@ -232,6 +232,53 @@ class AIChatRequest(BaseModel):
     provider: str
     model: str
     api_key: str
+    reference_text: str = ""
+
+
+class ReferenceExtractResponse(BaseModel):
+    filename: str
+    text: str
+    chars: int
+
+
+_REFERENCE_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+_REFERENCE_MAX_CHARS = 200_000
+
+
+def _extract_pdf_text(data: bytes) -> str:
+    from pypdf import PdfReader
+    reader = PdfReader(io.BytesIO(data))
+    parts: list[str] = []
+    for page in reader.pages:
+        try:
+            parts.append(page.extract_text() or "")
+        except Exception:
+            continue
+    return "\n\n".join(p for p in parts if p.strip())
+
+
+@router.post("/reference/extract", response_model=ReferenceExtractResponse)
+async def reference_extract(file: UploadFile = File(...)) -> ReferenceExtractResponse:
+    name = (file.filename or "").lower()
+    ext = name.rsplit(".", 1)[-1] if "." in name else ""
+    if ext not in {"md", "txt", "pdf"}:
+        raise HTTPException(status_code=400, detail="md, txt, pdf 파일만 지원합니다.")
+    data = await file.read()
+    if len(data) > _REFERENCE_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="파일이 10MB를 초과합니다.")
+    try:
+        if ext == "pdf":
+            text = _extract_pdf_text(data)
+        else:
+            text = data.decode("utf-8", errors="replace")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"파일 처리 실패: {e}")
+    text = text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="파일에서 텍스트를 추출하지 못했습니다.")
+    if len(text) > _REFERENCE_MAX_CHARS:
+        text = text[:_REFERENCE_MAX_CHARS] + "\n\n…(이하 생략)"
+    return ReferenceExtractResponse(filename=file.filename or "", text=text, chars=len(text))
 
 
 class AppliedReplacement(BaseModel):
@@ -262,7 +309,7 @@ async def ai_chat(session_id: str, body: AIChatRequest) -> AIChatResponse:
     except KeyError:
         raise HTTPException(status_code=400, detail=f"Unknown provider: {body.provider}")
     document_text = s.doc.extract_text()
-    system_prompt = build_system_prompt(body.message)
+    system_prompt = build_system_prompt(body.message, reference_text=body.reference_text)
     try:
         result = await provider.chat(
             api_key=body.api_key,

@@ -1,15 +1,36 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChatMessage } from '../types'
 
+export type ReferenceAttachment = {
+  filename: string
+  chars: number
+}
+
 type Props = {
   messages: ChatMessage[]
   onSend: (text: string) => void
   onRetry?: (retryToken: string) => void
   busy: boolean
   thinking?: boolean
+  reference?: ReferenceAttachment | null
+  onAttachReference?: (file: File) => Promise<void> | void
+  onClearReference?: () => void
+  attachBusy?: boolean
+  attachError?: string | null
 }
 
-export function ChatPanel({ messages, onSend, onRetry, busy, thinking }: Props) {
+export function ChatPanel({
+  messages,
+  onSend,
+  onRetry,
+  busy,
+  thinking,
+  reference,
+  onAttachReference,
+  onClearReference,
+  attachBusy,
+  attachError,
+}: Props) {
   const logRef = useRef<HTMLDivElement>(null)
   // Auto-scroll on new messages
   useEffect(() => {
@@ -18,6 +39,7 @@ export function ChatPanel({ messages, onSend, onRetry, busy, thinking }: Props) 
     }
   }, [messages.length, thinking])
   const [draft, setDraft] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const submit = () => {
     const t = draft.trim()
@@ -70,9 +92,59 @@ export function ChatPanel({ messages, onSend, onRetry, busy, thinking }: Props) 
           </div>
         )}
       </div>
+      {(reference || attachError) && (
+        <div className="chat-reference">
+          {reference && (
+            <div className="chat-reference-chip">
+              <span className="chat-reference-icon" aria-hidden>📎</span>
+              <span className="chat-reference-name" title={reference.filename}>
+                {reference.filename}
+              </span>
+              <span className="chat-reference-meta">
+                ({reference.chars.toLocaleString()}자)
+              </span>
+              <button
+                className="chat-reference-remove"
+                onClick={onClearReference}
+                disabled={busy || attachBusy}
+                title="첨부 제거"
+                aria-label="첨부 제거"
+              >
+                ×
+              </button>
+            </div>
+          )}
+          {attachError && <div className="chat-reference-error">{attachError}</div>}
+        </div>
+      )}
       <div className="chat-input">
+        {onAttachReference && (
+          <>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".md,.txt,.pdf,text/markdown,text/plain,application/pdf"
+              style={{ display: 'none' }}
+              onChange={async (e) => {
+                const f = e.target.files?.[0]
+                e.target.value = ''
+                if (f) await onAttachReference(f)
+              }}
+            />
+            <button
+              type="button"
+              className="chat-attach-btn"
+              onClick={() => fileRef.current?.click()}
+              disabled={busy || attachBusy}
+              title="참고 파일 첨부 (md/txt/pdf)"
+              aria-label="참고 파일 첨부"
+            >
+              {attachBusy ? <span className="spinner" /> : '📎'}
+            </button>
+          </>
+        )}
         <textarea
-          placeholder="AI에게 편집 요청..."
+          placeholder={reference ? 'AI에게 편집 요청 (참고자료 첨부됨)…' : 'AI에게 편집 요청...'}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {

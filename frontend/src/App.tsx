@@ -41,6 +41,35 @@ function App() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const previewRef = useRef<PreviewHandle>(null)
 
+  // Reference attachment for AI chat (md/txt/pdf)
+  const [referenceText, setReferenceText] = useState<string>('')
+  const [referenceFilename, setReferenceFilename] = useState<string>('')
+  const [referenceChars, setReferenceChars] = useState<number>(0)
+  const [referenceBusy, setReferenceBusy] = useState(false)
+  const [referenceError, setReferenceError] = useState<string | null>(null)
+
+  const onAttachReference = useCallback(async (file: File) => {
+    setReferenceBusy(true)
+    setReferenceError(null)
+    try {
+      const r = await api.extractReference(file)
+      setReferenceText(r.text)
+      setReferenceFilename(r.filename)
+      setReferenceChars(r.chars)
+    } catch (e) {
+      setReferenceError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setReferenceBusy(false)
+    }
+  }, [])
+
+  const onClearReference = useCallback(() => {
+    setReferenceText('')
+    setReferenceFilename('')
+    setReferenceChars(0)
+    setReferenceError(null)
+  }, [])
+
   const onSelectChange = useCallback((id: string) => {
     const c = changes.find((ch) => ch.id === id)
     if (!c || !c.tids || c.tids.length === 0) return
@@ -302,6 +331,7 @@ function App() {
           provider: aiSettings.provider,
           model: aiSettings.model,
           api_key: aiSettings.apiKey,
+          reference_text: referenceText,
         })
         setHtml(r.html)
         applyFlags(r)
@@ -393,7 +423,7 @@ function App() {
         setThinking(false)
       }
     },
-    [sessionId, aiSettings],
+    [sessionId, aiSettings, referenceText],
   )
 
   const onChatSend = useCallback(
@@ -564,6 +594,15 @@ function App() {
               onRetry={onChatRetry}
               busy={busy}
               thinking={thinking}
+              reference={
+                referenceFilename
+                  ? { filename: referenceFilename, chars: referenceChars }
+                  : null
+              }
+              onAttachReference={onAttachReference}
+              onClearReference={onClearReference}
+              attachBusy={referenceBusy}
+              attachError={referenceError}
             />
           </section>
           <section className="col-preview">

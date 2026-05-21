@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import httpx
 
-from .base import ChatResult, ProviderError
+from .base import ChatResult, ProviderError, ssl_context
 from .parse import parse_response
 
 
@@ -41,7 +41,7 @@ class ClaudeProvider:
                 }
             ],
         }
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=120.0, verify=ssl_context()) as client:
             try:
                 r = await client.post(url, headers=headers, json=body)
             except httpx.HTTPError as e:

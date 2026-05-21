@@ -95,13 +95,33 @@ export async function fetchProviders(): Promise<ProviderInfo[]> {
 
 export async function aiChat(
   sessionId: string,
-  args: { message: string; provider: string; model: string; api_key: string },
+  args: {
+    message: string
+    provider: string
+    model: string
+    api_key: string
+    reference_text?: string
+  },
 ): Promise<AIChatResponse> {
   const r = await fetch(`${BASE}/ai/chat/${sessionId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(args),
   })
+  if (!r.ok) throw new Error(await safeError(r))
+  return r.json()
+}
+
+export type ReferenceExtractResponse = {
+  filename: string
+  text: string
+  chars: number
+}
+
+export async function extractReference(file: File): Promise<ReferenceExtractResponse> {
+  const fd = new FormData()
+  fd.append('file', file)
+  const r = await fetch(`${BASE}/reference/extract`, { method: 'POST', body: fd })
   if (!r.ok) throw new Error(await safeError(r))
   return r.json()
 }

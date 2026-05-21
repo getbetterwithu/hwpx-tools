@@ -100,16 +100,34 @@ SYSTEM_PROMPT_BASE = f"""\
 """
 
 
-def build_system_prompt(user_message: str) -> str:
-    """Return the base prompt, optionally augmented with structural details.
-
-    Heuristic: if the message references tables/styles/structure-specific
-    Korean keywords, append a compact tag glossary to help the model reason
-    about what's possible vs what isn't.
+def build_system_prompt(user_message: str, reference_text: str = "") -> str:
+    """Return the base prompt, optionally augmented with structural details
+    and a user-supplied reference document.
     """
+    parts = [SYSTEM_PROMPT_BASE]
     if _wants_structural_context(user_message):
-        return SYSTEM_PROMPT_BASE + "\n\n" + _structural_appendix()
-    return SYSTEM_PROMPT_BASE
+        parts.append(_structural_appendix())
+    ref = (reference_text or "").strip()
+    if ref:
+        parts.append(_reference_appendix(ref))
+    return "\n\n".join(parts)
+
+
+def _reference_appendix(reference_text: str) -> str:
+    return f"""\
+## 사용자가 첨부한 참고 자료
+
+아래는 사용자가 첨부한 외부 문서(md/txt/pdf에서 추출한 텍스트)입니다.
+이 자료의 정보를 사용하여 본문(HWPX)의 빈칸·자리표시자·해당 항목을 채우거나
+수정하세요. 다만 출력 형식·변경 규칙은 위와 동일합니다(JSON, 정확한 부분 문자열).
+
+참고 자료는 진실의 원천(source of truth)으로 취급하되, 본문에 이미 있는 내용과
+충돌하면 사용자 메시지의 지시를 우선합니다.
+
+```
+{reference_text}
+```
+"""
 
 
 # Keep this for callers that just want the static prompt (no per-message tweak).
