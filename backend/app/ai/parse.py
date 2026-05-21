@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import re
 
-from .base import ChatResult, ProviderError, Replacement
+from .base import CellFill, ChatResult, ProviderError, Replacement
 
 
 _JSON_BLOCK = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
@@ -38,7 +38,25 @@ def parse_response(raw: str) -> ChatResult:
             continue  # empty 'old' would be meaningless
         reps.append(Replacement(old=old, new=new))
 
-    return ChatResult(summary=summary, replacements=reps, raw_response=raw)
+    fills_in = data.get("cell_fills", [])
+    fills: list[CellFill] = []
+    if isinstance(fills_in, list):
+        for it in fills_in:
+            if not isinstance(it, dict):
+                continue
+            tid_raw = it.get("tid")
+            text = it.get("text")
+            if not isinstance(text, str):
+                continue
+            try:
+                tid = int(tid_raw)
+            except (TypeError, ValueError):
+                continue
+            fills.append(CellFill(tid=tid, text=text))
+
+    return ChatResult(
+        summary=summary, replacements=reps, cell_fills=fills, raw_response=raw
+    )
 
 
 def _extract_json(text: str) -> str | None:

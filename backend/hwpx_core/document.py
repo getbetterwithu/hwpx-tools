@@ -21,7 +21,16 @@ from typing import TYPE_CHECKING
 
 from .archive import read_entries, write_entries
 from .html_view import HtmlRenderer
-from .ns import HP_P, HP_T
+from .ns import (
+    HP_CELLADDR,
+    HP_P,
+    HP_RUN,
+    HP_SUBLIST,
+    HP_T,
+    HP_TBL,
+    HP_TC,
+    HP_TR,
+)
 
 if TYPE_CHECKING:
     from .validate import ValidationReport
@@ -166,6 +175,94 @@ class HwpxDocument:
             line = "".join((s.t_element.text or "")[s.start:s.end] for s in spans)
             lines.append(line)
         return paragraph_sep.join(lines)
+
+    def extract_text_for_ai(self) -> str:
+        """Like extract_text(), but tables are rendered as markdown tables and
+        empty cells are tagged with ⟦CELL:tid⟧ markers.
+
+        The AI can target empty cells by returning {"cell_fills":[{"tid":N,
+        "text":"..."}]} — the marker's tid maps directly to an <hp:t> element
+        via to_html()'s locator, so apply_edits({tid: text}) does the fill.
+
+        Requires the locator to be populated; calls to_html() if it isn't.
+        """
+        if not self._t_locator:
+            self.to_html()
+        elem_to_tid = {id(elem): tid for tid, elem in self._t_locator.items()}
+
+        out: list[str] = []
+        for _, root in sorted(self._sections.items()):
+            for top_p in self._iter_top_paragraphs(root):
+                # Does this paragraph carry a top-level table?
+                tables = [
+                    run.find(HP_TBL)
+                    for run in top_p.findall(HP_RUN)
+                    if run.find(HP_TBL) is not None
+                ]
+                if tables:
+                    for tbl in tables:
+                        out.append(self._render_table_md(tbl, elem_to_tid))
+                else:
+                    spans = _iter_paragraph_tspans(top_p)
+                    line = "".join(
+                        (s.t_element.text or "")[s.start:s.end] for s in spans
+                    )
+                    out.append(line)
+        return "\n".join(out)
+
+    def _iter_top_paragraphs(self, root: etree._Element):
+        """Yield paragraphs that are NOT nested inside a table cell."""
+        for p in root.iter(HP_P):
+            ancestor = p.getparent()
+            inside_cell = False
+            while ancestor is not None:
+                if ancestor.tag == HP_TC:
+                    inside_cell = True
+                    break
+                ancestor = ancestor.getparent()
+            if not inside_cell:
+                yield p
+
+    def _render_table_md(self, tbl: etree._Element, elem_to_tid: dict) -> str:
+        """Render a <hp:tbl> as a markdown table with ⟦CELL:tid⟧ for empties."""
+        rows: list[list[str]] = []
+        for tr in tbl.findall(HP_TR):
+            cells: list[str] = []
+            for tc in tr.findall(HP_TC):
+                cells.append(self._cell_text_for_ai(tc, elem_to_tid))
+            if cells:
+                rows.append(cells)
+        if not rows:
+            return ""
+        max_cols = max(len(r) for r in rows)
+        rows = [r + [""] * (max_cols - len(r)) for r in rows]
+        lines: list[str] = []
+        lines.append("| " + " | ".join(rows[0]) + " |")
+        lines.append("|" + "|".join(["---"] * max_cols) + "|")
+        for r in rows[1:]:
+            lines.append("| " + " | ".join(r) + " |")
+        return "\n".join(lines)
+
+    def _cell_text_for_ai(self, tc: etree._Element, elem_to_tid: dict) -> str:
+        """Cell's visible text, or ⟦CELL:tid⟧ if the cell is effectively empty."""
+        sublist = tc.find(HP_SUBLIST)
+        if sublist is None:
+            return ""
+        cell_t_elems: list[etree._Element] = []
+        for cell_p in sublist.findall(HP_P):
+            for span in _iter_paragraph_tspans(cell_p):
+                cell_t_elems.append(span.t_element)
+        full_text = "".join((t.text or "") for t in cell_t_elems)
+        # Treat zero-width filler / pure whitespace as empty
+        stripped = full_text.replace("​", "").strip()
+        if not stripped:
+            for t in cell_t_elems:
+                tid = elem_to_tid.get(id(t))
+                if tid is not None:
+                    return f"⟦CELL:{tid}⟧"
+            return ""
+        # Collapse internal newlines so the markdown row stays one line
+        return stripped.replace("\n", " ").replace("|", "\\|")
 
     # --- preview ----------------------------------------------------------
 

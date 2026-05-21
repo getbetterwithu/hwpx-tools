@@ -335,13 +335,18 @@ function App() {
         })
         setHtml(r.html)
         applyFlags(r)
-        if (r.applied.length > 0) {
+        const appliedCells = r.applied_cells ?? []
+        const skippedCells = r.skipped_cells ?? []
+        if (r.applied.length > 0 || appliedCells.length > 0) {
           const allTids = new Set<number>()
           const tidsByApplied: number[][] = []
           for (const a of r.applied) {
             const t = [...extractTidsContaining(r.html, a.new)]
             t.forEach((tid) => allTids.add(tid))
             tidsByApplied.push(t)
+          }
+          for (const c of appliedCells) {
+            allTids.add(c.tid)
           }
           setYellowTids((prev) => new Set([...prev, ...allTids]))
           setRedTids(new Set())
@@ -363,6 +368,20 @@ function App() {
               },
             ])
           }
+          for (const c of appliedCells) {
+            setChanges((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                source: 'ai',
+                description: `빈 셀 채움 → "${c.text}"`,
+                before: '',
+                after: c.text,
+                tids: [c.tid],
+                timestamp: Date.now(),
+              },
+            ])
+          }
         }
         const lines: string[] = []
         if (r.summary) lines.push(r.summary)
@@ -374,6 +393,9 @@ function App() {
             )}곳)`,
           )
         }
+        if (appliedCells.length > 0) {
+          lines.push(`빈 셀 채움: ${appliedCells.length}건`)
+        }
         if (r.skipped.length > 0) {
           lines.push(`건너뜀(원문 미발견): ${r.skipped.length}건`)
           for (const sk of r.skipped) {
@@ -382,12 +404,22 @@ function App() {
             )
           }
         }
-        if (r.applied.length === 0 && r.skipped.length === 0) {
+        if (skippedCells.length > 0) {
+          lines.push(`건너뜀(셀 미발견): ${skippedCells.length}건`)
+        }
+        if (
+          r.applied.length === 0 &&
+          r.skipped.length === 0 &&
+          appliedCells.length === 0 &&
+          skippedCells.length === 0
+        ) {
           lines.push('변경 사항 없음.')
         }
         // If nothing applied but AI suggested things, attach a retry button
         const allSkipped =
-          r.applied.length === 0 && r.skipped.length > 0
+          r.applied.length === 0 &&
+          appliedCells.length === 0 &&
+          (r.skipped.length > 0 || skippedCells.length > 0)
         const retryToken = allSkipped ? crypto.randomUUID() : undefined
         if (retryToken) {
           setRetryMap((prev) => ({
@@ -493,7 +525,7 @@ function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">hwpx 편집기</div>
+        <div className="brand">한글랩 <span className="brand-sub">(HWPX Lab)</span></div>
         {!sessionId ? (
           <div className="topbar-right">
             <button onClick={() => setHelpOpen(true)}>📄 사용설명서</button>

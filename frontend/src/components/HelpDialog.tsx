@@ -25,7 +25,7 @@ export function HelpDialog({ open, onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="help-header">
-          <h3>📄 hwpx 편집기 사용설명서</h3>
+          <h3>📄 한글랩 (HWPX Lab) 사용설명서</h3>
           <button className="help-close" onClick={onClose}>✕</button>
         </div>
         <div className="help-body">

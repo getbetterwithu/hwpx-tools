@@ -27,11 +27,14 @@ export type UndoRedoResponse = HistoryFlags & {
 }
 
 export type AppliedReplacement = { old: string; new: string; count: number }
+export type AppliedCellFill = { tid: number; text: string }
 
 export type AIChatResponse = HistoryFlags & {
   summary: string
   applied: AppliedReplacement[]
   skipped: AppliedReplacement[]
+  applied_cells?: AppliedCellFill[]
+  skipped_cells?: AppliedCellFill[]
   html: string
 }
 

@@ -287,10 +287,17 @@ class AppliedReplacement(BaseModel):
     count: int
 
 
+class AppliedCellFill(BaseModel):
+    tid: int
+    text: str
+
+
 class AIChatResponse(HistoryFlags):
     summary: str
     applied: list[AppliedReplacement]
     skipped: list[AppliedReplacement]  # zero-match entries the AI suggested
+    applied_cells: list[AppliedCellFill] = []
+    skipped_cells: list[AppliedCellFill] = []  # tids the AI suggested but we couldn't find
     html: str
 
 
@@ -308,7 +315,9 @@ async def ai_chat(session_id: str, body: AIChatRequest) -> AIChatResponse:
         provider = get_provider(body.provider)
     except KeyError:
         raise HTTPException(status_code=400, detail=f"Unknown provider: {body.provider}")
-    document_text = s.doc.extract_text()
+    # extract_text_for_ai renders tables as markdown and tags empty cells with
+    # ⟦CELL:tid⟧ so the AI can target them via cell_fills.
+    document_text = s.doc.extract_text_for_ai()
     system_prompt = build_system_prompt(body.message, reference_text=body.reference_text)
     try:
         result = await provider.chat(
@@ -331,12 +340,31 @@ async def ai_chat(session_id: str, body: AIChatRequest) -> AIChatResponse:
             any_change = True
         else:
             skipped.append(AppliedReplacement(old=rep.old, new=rep.new, count=0))
+
+    applied_cells: list[AppliedCellFill] = []
+    skipped_cells: list[AppliedCellFill] = []
+    if result.cell_fills:
+        edits = {f.tid: f.text for f in result.cell_fills}
+        changed = s.doc.apply_edits(edits)
+        # apply_edits returns count but not which tids succeeded; redo per-tid
+        # check by looking up the locator state.
+        valid_tids = set(s.doc._t_locator.keys())  # noqa: SLF001 (read-only)
+        for f in result.cell_fills:
+            if f.tid in valid_tids:
+                applied_cells.append(AppliedCellFill(tid=f.tid, text=f.text))
+            else:
+                skipped_cells.append(AppliedCellFill(tid=f.tid, text=f.text))
+        if changed > 0:
+            any_change = True
+
     if any_change:
         s.record()  # one history step per chat turn
     return AIChatResponse(
         summary=result.summary,
         applied=applied,
         skipped=skipped,
+        applied_cells=applied_cells,
+        skipped_cells=skipped_cells,
         html=s.doc.to_html(),
         **_flags(s),
     )

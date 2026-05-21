@@ -40,9 +40,17 @@ class Replacement:
 
 
 @dataclass
+class CellFill:
+    """Fill an empty table cell identified by its hp:t tid marker."""
+    tid: int
+    text: str
+
+
+@dataclass
 class ChatResult:
     summary: str
     replacements: list[Replacement]
+    cell_fills: list[CellFill]
     raw_response: str  # original assistant text (for debugging)
 
 
